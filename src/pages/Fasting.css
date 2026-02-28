@@ -1,0 +1,23 @@
+.fasting-page {
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.fasting-header {
+  padding: 1.5rem;
+  text-align: center;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.fasting-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.fasting-main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+}
