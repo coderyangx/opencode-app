@@ -13,6 +13,21 @@
   text-align: center;
 }
 
+.clear-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+  background: #fee2e2;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover {
+  background: #fecaca;
+}
+
 .stats-summary {
   display: flex;
   justify-content: space-around;
@@ -47,6 +62,12 @@
   font-weight: 600;
   color: #374151;
   margin-bottom: 0.75rem;
+}
+
+.history-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .history-list {

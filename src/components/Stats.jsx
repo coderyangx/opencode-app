@@ -18,7 +18,7 @@ const formatDate = (timestamp) => {
 };
 
 export default function Stats() {
-  const { history } = useFastingContext();
+  const { history, clearHistory } = useFastingContext();
 
   const totalFasts = history.length;
   const completedFasts = history.filter((r) => r.completed).length;
@@ -47,7 +47,12 @@ export default function Stats() {
 
       {recentHistory.length > 0 && (
         <div className='history-section'>
-          <h4 className='history-title'>最近记录</h4>
+          <div className='history-title-row'>
+            <h4 className='history-title'>最近记录</h4>
+            <button className='clear-btn' onClick={() => clearHistory()}>
+              清空记录
+            </button>
+          </div>
           <ul className='history-list'>
             {recentHistory.map((record, index) => (
               <li key={index} className='history-item'>
@@ -57,7 +62,9 @@ export default function Stats() {
                 </div>
                 <div className='history-status'>
                   <span className='history-duration'>{formatDuration(record.duration)}</span>
-                  <span className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}>
+                  <span
+                    className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}
+                  >
                     {record.completed ? '完成' : '中断'}
                   </span>
                 </div>
@@ -67,9 +74,7 @@ export default function Stats() {
         </div>
       )}
 
-      {history.length === 0 && (
-        <p className='stats-empty'>暂无断食记录</p>
-      )}
+      {history.length === 0 && <p className='stats-empty'>暂无断食记录</p>}
     </div>
   );
 }

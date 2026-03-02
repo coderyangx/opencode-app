@@ -74,6 +74,7 @@ export const FastingProvider = ({ children }) => {
 
   const endFasting = useCallback(() => {
     const endTime = Date.now();
+    let newHistory = data.history || [];
     if (data.fastingStartTime) {
       const record = {
         plan: currentPlan,
@@ -82,15 +83,16 @@ export const FastingProvider = ({ children }) => {
         duration: endTime - data.fastingStartTime,
         completed: data.fastingEndTime && endTime >= data.fastingEndTime,
       };
-      addHistoryRecord(record);
+      newHistory = [record, ...newHistory].slice(0, 100);
     }
     setData((prev) => ({
       ...prev,
       isFasting: false,
       fastingStartTime: null,
       fastingEndTime: null,
+      history: newHistory,
     }));
-  }, [data.fastingStartTime, data.fastingEndTime, currentPlan]);
+  }, [data.fastingStartTime, data.fastingEndTime, data.history, currentPlan]);
 
   const setPlan = useCallback(
     (plan) => {
@@ -103,6 +105,13 @@ export const FastingProvider = ({ children }) => {
     },
     [data.isFasting],
   );
+
+  const clearHistory = useCallback(() => {
+    setData((prev) => ({
+      ...prev,
+      history: [],
+    }));
+  }, []);
 
   const elapsed = data.isFasting && data.fastingStartTime ? now - data.fastingStartTime : 0;
   const targetDuration = planConfig.fastingHours * 60 * 60 * 1000;
@@ -121,6 +130,7 @@ export const FastingProvider = ({ children }) => {
     startFasting,
     endFasting,
     setPlan,
+    clearHistory,
     history: data.history,
   };
 
