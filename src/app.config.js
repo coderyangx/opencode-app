@@ -14,5 +14,6 @@ export default {
     },
   },
   style: 'v2',
+  lazyCodeLoading: 'requiredComponents',
   sitemapLocation: 'sitemap.json',
 };
