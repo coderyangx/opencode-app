@@ -1,36 +1,23 @@
-import './ProgressRing.css';
+import React from 'react';
+import { View, Text } from '@tarojs/components';
+import './ProgressRing.scss';
 
-export default function ProgressRing({ progress, size = 200, strokeWidth = 12, children }) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (progress / 100) * circumference;
+export default function ProgressRing({ progress = 0, size = 280, children }) {
+  const width = progress > 0 ? progress + '%' : 0;
+  const progressPercent = progress > 0 ? progress.toFixed(2) + '%' : '0%';
 
   return (
-    <div className='progress-ring-container'>
-      <svg width={size} height={size} className='progress-ring'>
-        <circle
-          className='progress-ring-bg'
-          strokeWidth={strokeWidth}
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
+    <View className='progress-ring-wrapper'>
+      <View className='progress-ring-circle'>
+        <View className='progress-ring-content'>{children}</View>
+      </View>
+      <View className='progress-bar'>
+        <View
+          className={`progress-bar-fill ${progress >= 100 ? 'completed' : ''}`}
+          style={{ width }}
         />
-        <circle
-          className='progress-ring-progress'
-          strokeWidth={strokeWidth}
-          strokeLinecap='round'
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset: offset,
-          }}
-        />
-      </svg>
-      <div className='progress-ring-content'>
-        {children}
-      </div>
-    </div>
+      </View>
+      <Text className='progress-text'>{progressPercent}</Text>
+    </View>
   );
 }

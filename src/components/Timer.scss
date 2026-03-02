@@ -1,0 +1,54 @@
+.timer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+}
+
+.timer-status {
+  font-size: 24rpx;
+  color: #6b7280;
+  display: block;
+}
+
+.timer-time {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+  display: block;
+  line-height: 1.2;
+}
+
+.timer-plan {
+  font-size: 22rpx;
+  color: #9ca3af;
+  display: block;
+}
+
+.timer-button {
+  padding: 20rpx 60rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border: none;
+  border-radius: 999rpx;
+  background: #10b981;
+  color: white;
+  margin-top: 10rpx;
+}
+
+.timer-button.start {
+  background: #10b981;
+}
+
+.timer-button.stop {
+  background: #ef4444;
+}
+
+.timer-hint {
+  font-size: 22rpx;
+  color: #6b7280;
+  display: block;
+  text-align: center;
+}

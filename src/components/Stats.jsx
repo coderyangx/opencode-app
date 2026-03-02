@@ -1,5 +1,7 @@
+import React from 'react';
+import { View, Text, Button } from '@tarojs/components';
 import { useFastingContext } from '../hooks/useFasting';
-import './Stats.css';
+import './Stats.scss';
 
 const formatDuration = (ms) => {
   const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -18,7 +20,7 @@ const formatDate = (timestamp) => {
 };
 
 export default function Stats() {
-  const { history } = useFastingContext();
+  const { history, clearHistory } = useFastingContext();
 
   const totalFasts = history.length;
   const completedFasts = history.filter((r) => r.completed).length;
@@ -26,50 +28,63 @@ export default function Stats() {
 
   const recentHistory = history.slice(0, 5);
 
-  return (
-    <div className='stats-container'>
-      <h3 className='stats-title'>统计</h3>
+  const handleClear = () => {
+    clearHistory();
+  };
 
-      <div className='stats-summary'>
-        <div className='stat-item'>
-          <span className='stat-value'>{totalFasts}</span>
-          <span className='stat-label'>总断食次数</span>
-        </div>
-        <div className='stat-item'>
-          <span className='stat-value'>{completedFasts}</span>
-          <span className='stat-label'>完成次数</span>
-        </div>
-        <div className='stat-item'>
-          <span className='stat-value'>{totalHours.toFixed(1)}h</span>
-          <span className='stat-label'>累计时长</span>
-        </div>
-      </div>
+  return (
+    <View className='stats-container'>
+      <Text className='stats-title'>统计</Text>
+
+      <View className='stats-summary'>
+        <View className='stat-item'>
+          <Text className='stat-value'>{totalFasts}</Text>
+          <Text className='stat-label'>总断食次数</Text>
+        </View>
+        <View className='stat-item'>
+          <Text className='stat-value'>{completedFasts}</Text>
+          <Text className='stat-label'>完成次数</Text>
+        </View>
+        <View className='stat-item'>
+          <Text className='stat-value'>{totalHours.toFixed(1)}h</Text>
+          <Text className='stat-label'>累计时长</Text>
+        </View>
+      </View>
 
       {recentHistory.length > 0 && (
-        <div className='history-section'>
-          <h4 className='history-title'>最近记录</h4>
-          <ul className='history-list'>
+        <View className='history-section'>
+          <View className='history-header'>
+            <View>
+              <Text className='history-title'>最近记录</Text>
+            </View>
+            <View>
+              <Button className='clear-btn' style={{ width: '100%' }} onClick={handleClear}>
+                清空记录
+              </Button>
+            </View>
+          </View>
+          <View className='history-list'>
             {recentHistory.map((record, index) => (
-              <li key={index} className='history-item'>
-                <div className='history-info'>
-                  <span className='history-plan'>{record.plan}</span>
-                  <span className='history-date'>{formatDate(record.startTime)}</span>
-                </div>
-                <div className='history-status'>
-                  <span className='history-duration'>{formatDuration(record.duration)}</span>
-                  <span className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}>
+              <View key={index} className='history-item'>
+                <View className='history-info'>
+                  <Text className='history-plan'>{record.plan}</Text>
+                  <Text className='history-date'>{formatDate(record.startTime)}</Text>
+                </View>
+                <View className='history-status'>
+                  <Text className='history-duration'>{formatDuration(record.duration)}</Text>
+                  <Text
+                    className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}
+                  >
                     {record.completed ? '完成' : '中断'}
-                  </span>
-                </div>
-              </li>
+                  </Text>
+                </View>
+              </View>
             ))}
-          </ul>
-        </div>
+          </View>
+        </View>
       )}
 
-      {history.length === 0 && (
-        <p className='stats-empty'>暂无断食记录</p>
-      )}
-    </div>
+      {history.length === 0 && <Text className='stats-empty'>暂无断食记录</Text>}
+    </View>
   );
 }

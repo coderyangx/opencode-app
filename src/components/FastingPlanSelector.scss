@@ -1,0 +1,52 @@
+.plan-selector {
+  padding: 30rpx;
+}
+
+.plan-selector-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 20rpx;
+  text-align: center;
+  display: block;
+}
+
+.plan-options {
+  display: flex;
+  gap: 20rpx;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.plan-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border: 2rpx solid #e5e7eb;
+  border-radius: 16rpx;
+  background: white;
+}
+
+.plan-option.active {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.plan-option.disabled {
+  opacity: 0.5;
+}
+
+.plan-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1f2937;
+  display: block;
+}
+
+.plan-desc {
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-top: 8rpx;
+  display: block;
+}
