@@ -5,6 +5,20 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
 
+  // CSS 预处理器
+  css: {
+    preprocessorOptions: {
+      less: {
+        // 支持内联 js
+        javascriptEnabled: true,
+        // 修改主题色（可选）
+        modifyVars: {
+          // '@primary-color': '#10b981', // 绿色主题
+        },
+      },
+    },
+  },
+
   build: {
     // 目标浏览器
     target: 'es2015',
