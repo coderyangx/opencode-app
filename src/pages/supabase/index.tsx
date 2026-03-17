@@ -65,6 +65,18 @@ const mockProducts: CreateProductData[] = [
 ];
 
 const Supabase = () => {
+  // // ❌ 错误：每次渲染都会执行 JSON.parse
+  // const [firstRender, setFirstRender] = useState(
+  //   JSON.parse(localStorage.getItem('fasting_data') || '{}'),
+  // );
+  // console.log('firstRender', firstRender);
+  // // ✅ 正确：只在首次渲染执行一次, 后续重新渲染不会重复读取 localStorage
+  // const [firstRender2, setFirstRender2] = useState(() => {
+  //   const stored = localStorage.getItem('fasting_data');
+  //   console.log('firstRender2', JSON.parse(stored || '{}'));
+  //   return stored ? JSON.parse(stored) : {};
+  // });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
