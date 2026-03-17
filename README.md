@@ -13,3 +13,6 @@ A simple fasting app
 
 - pinme
   https://pinme.eth.limo/#/preview/U2FsdGVkX19dIIlDayMkMlQubHpD55aoZ8atBIiypzKv5ZY9cZweN0BMOqNJqhuJm3YmwkllGFwNU_O_u8VZKDq_TkIsqZei4vRWtyPDvZeF9eBJqntDUEDCt46lXIZF6duhTfMmPSYkzpHF
+
+- cloudflare
+  https://agent.aicoder.dpdns.org (/supabase /home /login /about)
