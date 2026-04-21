@@ -24,7 +24,7 @@ export const sendNotification = (title, options) => {
   const notification = new Notification(title, {
     icon: '/ai-man.png',
     badge: '/ai-man.png',
-    ...options,
+    ...options
   });
 
   notification.onclick = () => {
@@ -38,14 +38,14 @@ export const sendNotification = (title, options) => {
 export const NOTIFICATION_MESSAGES = {
   fastingStarted: {
     title: '🍽️ 断食已开始',
-    body: '坚持就是胜利！加油💪',
+    body: '坚持就是胜利！加油💪'
   },
   fastingEndingSoon: {
     title: '⏰ 即将可以进食',
-    body: '30分钟后即可进食，准备好你的美食吧！',
+    body: '30分钟后即可进食，准备好你的美食吧！'
   },
   fastingCompleted: {
     title: '🎉 断食完成！',
-    body: '恭喜你完成了本次断食，继续保持！',
-  },
+    body: '恭喜你完成了本次断食，继续保持！'
+  }
 };

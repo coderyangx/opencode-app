@@ -5,7 +5,7 @@ const DEFAULT_DATA = {
   isFasting: false,
   fastingStartTime: null,
   fastingEndTime: null,
-  history: [],
+  history: []
 };
 
 export const getStorageData = () => {

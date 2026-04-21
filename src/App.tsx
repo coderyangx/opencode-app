@@ -21,29 +21,29 @@ const routes = [
   {
     path: '/login',
     element: Login,
-    auth: false, // 不需要登录
+    auth: false // 不需要登录
   },
   {
     path: '/',
     element: Fasting,
-    auth: true, // 需要登录
+    auth: true // 需要登录
   },
   {
     path: '/home',
     element: Home,
-    auth: true,
+    auth: true
   },
   {
     path: '/about',
     element: About,
-    auth: true,
+    auth: true
   },
   // 商品数据库
   {
     path: '/supabase',
     element: Supabase,
-    auth: false,
-  },
+    auth: false
+  }
 ];
 
 function App() {

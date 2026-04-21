@@ -16,3 +16,4 @@ A simple fasting app
 
 - cloudflare
   https://agent.aicoder.dpdns.org (/supabase /home /login /about)
+  https://fasting.aicoder.dpdns.org / https://app.aicoder.dpdns.org(/supabase /home /login /about)

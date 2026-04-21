@@ -4,7 +4,7 @@ import { requestPermission } from '../utils/notifications';
 import ProgressRing from './ProgressRing';
 import './Timer.css';
 
-const formatTime = (ms) => {
+const formatTime = (ms: number) => {
   if (ms <= 0) return '00:00:00';
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -14,8 +14,7 @@ const formatTime = (ms) => {
 };
 
 export default function Timer() {
-  const { isFasting, currentPlan, planConfig, progress, remainingTime, startFasting, endFasting } =
-    useFastingContext();
+  const { isFasting, currentPlan, planConfig, progress, remainingTime, startFasting, endFasting } = useFastingContext();
 
   const handleStartFasting = useCallback(async () => {
     await requestPermission();
@@ -27,9 +26,7 @@ export default function Timer() {
       <ProgressRing progress={progress} size={220} strokeWidth={14}>
         <span className='timer-status'>{isFasting ? '断食中' : '进食中'}</span>
         <span className='timer-time'>
-          {isFasting
-            ? formatTime(remainingTime)
-            : formatTime(planConfig.eatingHours * 60 * 60 * 1000)}
+          {isFasting ? formatTime(remainingTime) : formatTime(planConfig.eatingHours * 60 * 60 * 1000)}
         </span>
         <span className='timer-plan'>{currentPlan}</span>
       </ProgressRing>

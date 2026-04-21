@@ -1,13 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Form } from '@douyinfe/semi-ui';
 import { FastingProvider } from '../../hooks/useFasting';
-import {
-  getProducts,
-  createProduct,
-  Product,
-  CreateProductData,
-  getCurrentUser,
-} from '../../services/supabase';
+import { getProducts, createProduct, Product, CreateProductData, getCurrentUser } from '../../services/supabase';
 import supabase from '../../supabaseClient';
 import './index.css';
 
@@ -16,52 +10,45 @@ const mockProducts: CreateProductData[] = [
   {
     product: '肉蛋品类',
     productName: '牛肉',
-    productDesc:
-      '来自内蒙古大草原新鲜牛肉，高蛋白质含量，肉质鲜嫩多汁，减脂增肌人群的理想选择，每100g含蛋白质26g。',
-    price: 45,
+    productDesc: '来自内蒙古大草原新鲜牛肉，高蛋白质含量，肉质鲜嫩多汁，减脂增肌人群的理想选择，每100g含蛋白质26g。',
+    price: 45
   },
   {
     product: '肉蛋品类',
     productName: '鸡胸肉',
-    productDesc:
-      '低脂高蛋白鸡胸肉，肉质细嫩，口感鲜美，健身人群首选食材，每100g仅含1.6g脂肪，蛋白质含量高达23g。',
-    price: 25,
+    productDesc: '低脂高蛋白鸡胸肉，肉质细嫩，口感鲜美，健身人群首选食材，每100g仅含1.6g脂肪，蛋白质含量高达23g。',
+    price: 25
   },
   {
     product: '肉蛋品类',
     productName: '鸡蛋',
-    productDesc:
-      '农家散养土鸡蛋，蛋黄饱满色泽金黄，富含优质蛋白质和多种维生素，营养全面，适合日常饮食搭配。',
-    price: 15,
+    productDesc: '农家散养土鸡蛋，蛋黄饱满色泽金黄，富含优质蛋白质和多种维生素，营养全面，适合日常饮食搭配。',
+    price: 15
   },
   {
     product: '蔬果品类',
     productName: '西兰花',
-    productDesc:
-      '新鲜绿叶西兰花，富含膳食纤维和维生素C，低热量高营养，健康蔬菜首选，每100g仅34大卡。',
-    price: 8,
+    productDesc: '新鲜绿叶西兰花，富含膳食纤维和维生素C，低热量高营养，健康蔬菜首选，每100g仅34大卡。',
+    price: 8
   },
   {
     product: '蔬果品类',
     productName: '牛油果',
-    productDesc:
-      '进口新鲜牛油果，富含健康不饱和脂肪酸，美容养颜圣品，口感绵密细腻，适合制作沙拉和吐司。',
-    price: 12,
+    productDesc: '进口新鲜牛油果，富含健康不饱和脂肪酸，美容养颜圣品，口感绵密细腻，适合制作沙拉和吐司。',
+    price: 12
   },
   {
     product: '谷物品类',
     productName: '燕麦片',
-    productDesc:
-      '无糖纯燕麦片，早餐冲泡即食，饱腹感强，富含β-葡聚糖，有助于降低胆固醇，每100g约350大卡。',
-    price: 18,
+    productDesc: '无糖纯燕麦片，早餐冲泡即食，饱腹感强，富含β-葡聚糖，有助于降低胆固醇，每100g约350大卡。',
+    price: 18
   },
   {
     product: '奶制品类',
     productName: '脱脂牛奶',
-    productDesc:
-      '低脂高钙脱脂牛奶，营养不减脂肪更少，口感清爽不腻，每100ml仅含0.1g脂肪，钙含量高达120mg。',
-    price: 9,
-  },
+    productDesc: '低脂高钙脱脂牛奶，营养不减脂肪更少，口感清爽不腻，每100ml仅含0.1g脂肪，钙含量高达120mg。',
+    price: 9
+  }
 ];
 
 const Supabase = () => {
@@ -84,7 +71,7 @@ const Supabase = () => {
     product: '',
     productName: '',
     productDesc: '',
-    price: 0,
+    price: 0
   });
 
   useEffect(() => {
@@ -133,18 +120,8 @@ const Supabase = () => {
         {showForm && (
           <Form className='product-form' onSubmit={(values) => handleCreateProduct(values)}>
             <Form.Input field='product' label='产品类别' placeholder='例如：肉蛋品类、蔬果品类' />
-            <Form.Input
-              field='productName'
-              label='产品名称'
-              type='text'
-              placeholder='例如：牛肉、西兰花'
-            />
-            <Form.TextArea
-              field='productDesc'
-              label='产品描述'
-              placeholder='请输入产品描述'
-              rows={3}
-            />
+            <Form.Input field='productName' label='产品名称' type='text' placeholder='例如：牛肉、西兰花' />
+            <Form.TextArea field='productDesc' label='产品描述' placeholder='请输入产品描述' rows={3} />
             <Form.InputNumber
               field='price'
               label='价格（元）'

@@ -8,13 +8,7 @@ export default function ProgressRing({ progress, size = 200, strokeWidth = 12, c
   return (
     <div className='progress-ring-container'>
       <svg width={size} height={size} className='progress-ring'>
-        <circle
-          className='progress-ring-bg'
-          strokeWidth={strokeWidth}
-          r={radius}
-          cx={size / 2}
-          cy={size / 2}
-        />
+        <circle className='progress-ring-bg' strokeWidth={strokeWidth} r={radius} cx={size / 2} cy={size / 2} />
         <circle
           className='progress-ring-progress'
           strokeWidth={strokeWidth}
@@ -24,13 +18,11 @@ export default function ProgressRing({ progress, size = 200, strokeWidth = 12, c
           cy={size / 2}
           style={{
             strokeDasharray: circumference,
-            strokeDashoffset: offset,
+            strokeDashoffset: offset
           }}
         />
       </svg>
-      <div className='progress-ring-content'>
-        {children}
-      </div>
+      <div className='progress-ring-content'>{children}</div>
     </div>
   );
 }

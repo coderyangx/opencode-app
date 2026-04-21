@@ -12,15 +12,11 @@ const options = {
   //   detectSessionInUrl: true,
   // },
   global: {
-    headers: { 'x-my-custom-header': 'FASTING-APP' },
-  },
+    headers: { 'x-my-custom-header': 'FASTING-APP' }
+  }
 };
 
 // Create a single supabase client for interacting with your database
-const supabase = createClient(
-  'https://bfwtpofxsbiiepavfjcc.supabase.co',
-  VITE_SUPABASE_KEY,
-  options,
-);
+const supabase = createClient('https://bfwtpofxsbiiepavfjcc.supabase.co', VITE_SUPABASE_KEY, options);
 
 export default supabase;

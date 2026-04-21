@@ -13,7 +13,7 @@ const formatDate = (timestamp) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -62,9 +62,7 @@ export default function Stats() {
                 </div>
                 <div className='history-status'>
                   <span className='history-duration'>{formatDuration(record.duration)}</span>
-                  <span
-                    className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}
-                  >
+                  <span className={`history-badge ${record.completed ? 'completed' : 'incomplete'}`}>
                     {record.completed ? '完成' : '中断'}
                   </span>
                 </div>

@@ -14,9 +14,9 @@ export default defineConfig({
         // 修改主题色（可选）
         modifyVars: {
           // '@primary-color': '#10b981', // 绿色主题
-        },
-      },
-    },
+        }
+      }
+    }
   },
 
   build: {
@@ -55,13 +55,13 @@ export default defineConfig({
 
           // ⚠️ 页面也不要强制分包
           // React.lazy() 已经会自动处理页面分包
-        },
+        }
 
         // chunk 文件命名规范
         // chunkFileNames: 'js/[name]-[hash].js',
         // entryFileNames: 'js/[name]-[hash].js',
         // assetFileNames: '[ext]/[name]-[hash].[ext]',
-      },
+      }
     },
 
     // 压缩配置
@@ -70,27 +70,27 @@ export default defineConfig({
       compress: {
         // 删除 console
         drop_console: true,
-        drop_debugger: true,
-      },
+        drop_debugger: true
+      }
     },
 
     // 分包阈值警告（调整为 500KB，避免生成过多小文件）
     chunkSizeWarningLimit: 500,
 
     // Source map（生产环境建议用 false 或 hidden-source-map）
-    sourcemap: false,
+    sourcemap: false
   },
 
   // 依赖预构建优化
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom']
   },
 
   // 开发服务器配置（可选）
   server: {
     // 开启 gzip 压缩
-    compress: true,
-  },
+    compress: true
+  }
 });
 
 // 小型项目 第三方库：React、React-DOM、React-Router  总大小：~180KB

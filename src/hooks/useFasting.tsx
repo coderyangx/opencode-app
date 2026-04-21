@@ -2,9 +2,21 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { getStorageData, saveStorageData, addHistoryRecord } from '../utils/storage';
 import { sendNotification, NOTIFICATION_MESSAGES } from '../utils/notifications';
-import { PLANS } from '../constants';
+import { PLANS } from '../consts';
 
-const FastingContext = createContext(null);
+const FastingContext = createContext<{
+  isFasting: boolean;
+  currentPlan: string;
+  planConfig: { fastingHours: number; eatingHours: number };
+  progress: number;
+  elapsed: number;
+  remainingTime: number;
+  startFasting: () => void;
+  endFasting: () => void;
+  setPlan: (plan: string) => void;
+  clearHistory: () => void;
+  history: any[];
+}>(null);
 
 const REMINDER_BEFORE_END = 30 * 60 * 1000; // 30 min
 
@@ -38,19 +50,13 @@ export const FastingProvider = ({ children }) => {
 
     // 30 minutes提醒
     if (timeRemaining <= REMINDER_BEFORE_END && timeRemaining > 0 && !notifiedEndSoonRef.current) {
-      sendNotification(
-        NOTIFICATION_MESSAGES.fastingEndingSoon.title,
-        NOTIFICATION_MESSAGES.fastingEndingSoon,
-      );
+      sendNotification(NOTIFICATION_MESSAGES.fastingEndingSoon.title, NOTIFICATION_MESSAGES.fastingEndingSoon);
       notifiedEndSoonRef.current = true;
     }
 
     // 完成
     if (timeRemaining <= 0 && !notifiedCompleteRef.current) {
-      sendNotification(
-        NOTIFICATION_MESSAGES.fastingCompleted.title,
-        NOTIFICATION_MESSAGES.fastingCompleted,
-      );
+      sendNotification(NOTIFICATION_MESSAGES.fastingCompleted.title, NOTIFICATION_MESSAGES.fastingCompleted);
       notifiedCompleteRef.current = true;
     }
   }, [data.isFasting, data.fastingEndTime, now]);
@@ -64,12 +70,9 @@ export const FastingProvider = ({ children }) => {
       ...prev,
       isFasting: true,
       fastingStartTime: startTime,
-      fastingEndTime: startTime + planConfig.fastingHours * 60 * 60 * 1000,
+      fastingEndTime: startTime + planConfig.fastingHours * 60 * 60 * 1000
     }));
-    sendNotification(
-      NOTIFICATION_MESSAGES.fastingStarted.title,
-      NOTIFICATION_MESSAGES.fastingStarted,
-    );
+    sendNotification(NOTIFICATION_MESSAGES.fastingStarted.title, NOTIFICATION_MESSAGES.fastingStarted);
   }, [planConfig]);
 
   const endFasting = useCallback(() => {
@@ -81,7 +84,7 @@ export const FastingProvider = ({ children }) => {
         startTime: data.fastingStartTime,
         endTime: endTime,
         duration: endTime - data.fastingStartTime,
-        completed: data.fastingEndTime && endTime >= data.fastingEndTime,
+        completed: data.fastingEndTime && endTime >= data.fastingEndTime
       };
       newHistory = [record, ...newHistory].slice(0, 100);
     }
@@ -90,7 +93,7 @@ export const FastingProvider = ({ children }) => {
       isFasting: false,
       fastingStartTime: null,
       fastingEndTime: null,
-      history: newHistory,
+      history: newHistory
     }));
   }, [data.fastingStartTime, data.fastingEndTime, data.history, currentPlan]);
 
@@ -99,17 +102,17 @@ export const FastingProvider = ({ children }) => {
       if (!data.isFasting) {
         setData((prev) => ({
           ...prev,
-          currentPlan: plan,
+          currentPlan: plan
         }));
       }
     },
-    [data.isFasting],
+    [data.isFasting]
   );
 
   const clearHistory = useCallback(() => {
     setData((prev) => ({
       ...prev,
-      history: [],
+      history: []
     }));
   }, []);
 
@@ -117,8 +120,7 @@ export const FastingProvider = ({ children }) => {
   const targetDuration = planConfig.fastingHours * 60 * 60 * 1000;
   const progress = Math.min((elapsed / targetDuration) * 100, 100);
 
-  const remainingTime =
-    data.isFasting && data.fastingEndTime ? Math.max(data.fastingEndTime - now, 0) : 0;
+  const remainingTime = data.isFasting && data.fastingEndTime ? Math.max(data.fastingEndTime - now, 0) : 0;
 
   const value = {
     isFasting: data.isFasting,
@@ -131,7 +133,7 @@ export const FastingProvider = ({ children }) => {
     endFasting,
     setPlan,
     clearHistory,
-    history: data.history,
+    history: data.history
   };
 
   return <FastingContext.Provider value={value}>{children}</FastingContext.Provider>;

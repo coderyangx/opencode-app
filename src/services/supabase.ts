@@ -10,12 +10,12 @@ const responseData = (res) => {
 };
 
 // 注册
-export const signUp = async (data: { email: string; password: string }) => {
+export const signUp = async (data: { email: string; password: string; options?: any }) => {
   const { email, password, options } = data;
   const res = await supabase.auth.signUp({
     email,
     password,
-    options,
+    options
   });
   return responseData(res);
 };
@@ -25,7 +25,7 @@ export const signIn = async (data: { email: string; password: string }) => {
   const { email, password } = data;
   const res = await supabase.auth.signInWithPassword({
     email,
-    password,
+    password
   });
   return responseData(res);
 };
@@ -49,7 +49,7 @@ export async function getCurrentUser() {
 
   supabase.auth.onAuthStateChange(async () => {
     const {
-      data: { user },
+      data: { user }
     } = await supabase.auth.getUser();
     console.log('onAuthStateChange userinfo', user);
   });
@@ -98,26 +98,15 @@ export const deleteProduct = async (id: number) => {
 };
 
 // 修改
-export const updateProduct = async ({
-  id,
-  updateProduct,
-}: {
-  id: number;
-  updateProduct: EditProductData;
-}) => {
-  const res = await supabase
-    .from(TABLE_PRODUCTS)
-    .update(updateProduct)
-    .eq('id', id)
-    .select()
-    .single();
+export const updateProduct = async ({ id, updateProduct }: { id: number; updateProduct: EditProductData }) => {
+  const res = await supabase.from(TABLE_PRODUCTS).update(updateProduct).eq('id', id).select().single();
   return responseData(res);
 };
 
 // 对商品按价格排序 + 对商品按照价格范围筛选
 export const getProductsAndFilter = async ({
   sortby,
-  filters,
+  filters
 }: {
   sortby?: { field: string; ascending: boolean };
   filters?: { field: string; method: string; value: string | number }[];

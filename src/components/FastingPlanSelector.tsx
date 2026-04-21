@@ -1,5 +1,5 @@
 import { useFastingContext } from '../hooks/useFasting';
-import { PLANS } from '../constants';
+import { PLANS } from '../consts';
 import './FastingPlanSelector.css';
 
 export default function FastingPlanSelector() {

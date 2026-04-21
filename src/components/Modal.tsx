@@ -1,13 +1,16 @@
+const style = {
+  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  minHeight: '200px',
+  minWidth: '200px'
+};
+
 const Modal = (props) => {
   if (!props.show) {
     return null;
   }
 
   return (
-    <div
-      className='modal'
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', minHeight: '200px', minWidth: '200px' }}
-    >
+    <div className='modal' style={style}>
       <div>弹窗标题</div>
       <div className='modal-content'>
         <span
@@ -17,7 +20,7 @@ const Modal = (props) => {
             marginRight: '10px',
             cursor: 'pointer',
             backgroundColor: 'skyblue',
-            padding: '0 8px',
+            padding: '0 8px'
           }}
           onClick={props.onClose}
         >
