@@ -38,26 +38,26 @@
 
 ### ✅ 采纳
 
-| 设计点 | sandbox 做法 | 本项目应用 |
-|-------|-------------|-----------|
-| **统一响应格式** | `api-response.ts` 封装 `{ ok, data, error }` | `server/util/response.ts` 同样封装，所有接口统一格式 |
-| **自定义错误类** | `UnauthorizedError / IllegalArgumentError / NotFoundError` + 全局 `app.onError` | 完全复用这套模式，`server/util/errors.ts` |
-| **全局异常中间件** | `app.onError` 统一处理，根据错误类型映射 HTTP 状态码 | 避免每个 route 重复 try/catch |
-| **上下文压缩（L1+L2）** | 三层策略：L1 降级 tool result / L2 滑动窗口 / L3 摘要注入 | 先实现 L1+L2，预留 L3 接口；放到 `server/util/context-manager.ts` |
-| **Pino 结构化日志** | `logger.ts`，每次请求记录 method/path/duration/userId | 引入 pino，`server/util/logger.ts`，替换 console.log |
-| **工具上下文闭包注入** | `createTools(ctx)` 工厂函数，userId 等通过闭包传递 | `createTools({ userId })` 同样模式，便于后续扩展权限控制 |
-| **消息覆写语义** | `POST /messages/update` 整体替换，不逐条 upsert | `POST /api/conversations/messages` 覆写全量 messages |
+| 设计点                  | sandbox 做法                                                                    | 本项目应用                                                        |
+| ----------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **统一响应格式**        | `api-response.ts` 封装 `{ ok, data, error }`                                    | `server/util/response.ts` 同样封装，所有接口统一格式              |
+| **自定义错误类**        | `UnauthorizedError / IllegalArgumentError / NotFoundError` + 全局 `app.onError` | 完全复用这套模式，`server/util/errors.ts`                         |
+| **全局异常中间件**      | `app.onError` 统一处理，根据错误类型映射 HTTP 状态码                            | 避免每个 route 重复 try/catch                                     |
+| **上下文压缩（L1+L2）** | 三层策略：L1 降级 tool result / L2 滑动窗口 / L3 摘要注入                       | 先实现 L1+L2，预留 L3 接口；放到 `server/util/context-manager.ts` |
+| **Pino 结构化日志**     | `logger.ts`，每次请求记录 method/path/duration/userId                           | 引入 pino，`server/util/logger.ts`，替换 console.log              |
+| **工具上下文闭包注入**  | `createTools(ctx)` 工厂函数，userId 等通过闭包传递                              | `createTools({ userId })` 同样模式，便于后续扩展权限控制          |
+| **消息覆写语义**        | `POST /messages/update` 整体替换，不逐条 upsert                                 | `POST /api/conversations/messages` 覆写全量 messages              |
 
 ### ❌ 不采纳（原因）
 
-| 设计点 | 不采纳原因 |
-|-------|-----------|
-| **Redis 缓存层** | 无沙箱概念，对话直接存 Supabase，无需 Redis 热路径 |
-| **SQLite 本地存储** | 已有 Supabase，不引入第二个数据库 |
-| **SSO / 多租户认证** | 项目用标准 Supabase JWT，无多租户需求 |
-| **fixDeniedToolApprovals** | 当前无人工审批工具流，不需要这个 SDK compat fix |
-| **优雅关闭** | 开发阶段暂不需要，后续部署时再加 |
-| **Skill 安装 / Idle Pause** | 领域特定功能，不适用 |
+| 设计点                      | 不采纳原因                                         |
+| --------------------------- | -------------------------------------------------- |
+| **Redis 缓存层**            | 无沙箱概念，对话直接存 Supabase，无需 Redis 热路径 |
+| **SQLite 本地存储**         | 已有 Supabase，不引入第二个数据库                  |
+| **SSO / 多租户认证**        | 项目用标准 Supabase JWT，无多租户需求              |
+| **fixDeniedToolApprovals**  | 当前无人工审批工具流，不需要这个 SDK compat fix    |
+| **优雅关闭**                | 开发阶段暂不需要，后续部署时再加                   |
+| **Skill 安装 / Idle Pause** | 领域特定功能，不适用                               |
 
 ---
 
@@ -87,6 +87,7 @@ compactMessages(messages, windowSizeChars = 800_000)
 ```
 
 **触发阈值说明：**
+
 - 模型上下文窗口按 1M chars 估算（gpt-5.4-mini 约 128K tokens ≈ 512K chars）
 - L1 降级成本极低（只截字符串），优先触发
 - L2 只在 L1 压缩后仍超阈值时叠加
@@ -284,6 +285,7 @@ const {
 2. **`onFinish`**：写入 assistant 消息 + 更新 `conversations.updated_at`
 
 **废弃的设计：**
+
 - ~~`POST /conversations/messages` 前端覆写接口~~ — 删除，前端不应有写库权限
 - ~~`onFinish` 一次性 upsert 全量 messages~~ — 改为分步写入，职责更清晰
 
@@ -338,16 +340,24 @@ export async function loadChat(chatId: string): Promise<UIMessage[]> {
 
 // 流开始前写入 user 消息（幂等：同 id 的消息不会重复插入）
 export async function saveUserMessage(chatId: string, msg: UIMessage): Promise<void> {
-  await supabaseAdmin.from('messages').upsert(
-    { id: msg.id, conversation_id: chatId, role: 'user', parts: msg.parts ?? [], metadata: {} },
-    { onConflict: 'id', ignoreDuplicates: true }
-  );
+  await supabaseAdmin
+    .from('messages')
+    .upsert(
+      { id: msg.id, conversation_id: chatId, role: 'user', parts: msg.parts ?? [], metadata: {} },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
 }
 
 // onFinish 后写入 assistant 消息 + 更新会话时间
 export async function saveAssistantMessage(chatId: string, msg: UIMessage): Promise<void> {
   await supabaseAdmin.from('messages').upsert(
-    { id: msg.id, conversation_id: chatId, role: 'assistant', parts: msg.parts ?? [], metadata: (msg as any).metadata ?? {} },
+    {
+      id: msg.id,
+      conversation_id: chatId,
+      role: 'assistant',
+      parts: msg.parts ?? [],
+      metadata: (msg as any).metadata ?? {}
+    },
     { onConflict: 'id' }
   );
   await supabaseAdmin
@@ -525,11 +535,11 @@ app.post('/', async (c) => {
 });
 
 function buildAttachmentParts(
-  attachments: { signedUrl: string; mimeType: string; name: string }[]
+  attachments: { url: string; mimeType: string; name: string }[]
 ) {
-  return attachments.map(({ signedUrl, mimeType, name }) => {
+  return attachments.map(({ url, mimeType, name }) => {
     if (mimeType.startsWith('image/')) {
-      return { type: 'image' as const, image: signedUrl };
+      return { type: 'image' as const, image: url };
     }
     return { type: 'text' as const, text: `[附件: ${name}]` };
   });
@@ -619,7 +629,11 @@ app.get('/:id/messages', async (c) => {
   const user = c.get('user');
   const convId = c.req.param('id');
   const { data: conv } = await supabaseAdmin
-    .from('conversations').select('id').eq('id', convId).eq('user_id', user.id).single();
+    .from('conversations')
+    .select('id')
+    .eq('id', convId)
+    .eq('user_id', user.id)
+    .single();
   if (!conv) throw new NotFoundError('conversation not found');
 
   const { data } = await supabaseAdmin
@@ -656,13 +670,22 @@ export function getModel(name: string) {
 
 ```typescript
 export class UnauthorizedError extends Error {
-  constructor(msg = 'Unauthorized') { super(msg); this.name = 'UnauthorizedError'; }
+  constructor(msg = 'Unauthorized') {
+    super(msg);
+    this.name = 'UnauthorizedError';
+  }
 }
 export class IllegalArgumentError extends Error {
-  constructor(msg: string) { super(msg); this.name = 'IllegalArgumentError'; }
+  constructor(msg: string) {
+    super(msg);
+    this.name = 'IllegalArgumentError';
+  }
 }
 export class NotFoundError extends Error {
-  constructor(msg: string) { super(msg); this.name = 'NotFoundError'; }
+  constructor(msg: string) {
+    super(msg);
+    this.name = 'NotFoundError';
+  }
 }
 ```
 
@@ -681,9 +704,10 @@ import pino from 'pino';
 
 export const logger = pino({
   level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
-  transport: process.env.NODE_ENV !== 'production'
-    ? { target: 'pino-pretty', options: { colorize: true } }
-    : undefined
+  transport:
+    process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty', options: { colorize: true } }
+      : undefined
 });
 ```
 
@@ -693,19 +717,19 @@ export const logger = pino({
 import type { UIMessage } from 'ai';
 
 const CONTEXT_WINDOW_CHARS = 800_000; // 约 128K tokens × 6 chars/token
-const TOOL_RESULT_KEEP_RECENT = 4;    // 最近 N 轮 assistant 保留完整 tool result
-const TOOL_RESULT_MAX_CHARS = 200;    // 旧 tool result 截断到此长度
+const TOOL_RESULT_KEEP_RECENT = 4; // 最近 N 轮 assistant 保留完整 tool result
+const TOOL_RESULT_MAX_CHARS = 200; // 旧 tool result 截断到此长度
 
 export function compactMessages(messages: UIMessage[]): UIMessage[] {
   const size = JSON.stringify(messages).length;
   const ratio = size / CONTEXT_WINDOW_CHARS;
 
-  if (ratio < 0.6) return messages;          // 60% 以下，不压缩
+  if (ratio < 0.6) return messages; // 60% 以下，不压缩
 
-  let result = applyL1(messages);            // 60%+ 先做 L1
+  let result = applyL1(messages); // 60%+ 先做 L1
 
   if (JSON.stringify(result).length / CONTEXT_WINDOW_CHARS > 0.8) {
-    result = applyL2(result);                // 80%+ 叠加 L2
+    result = applyL2(result); // 80%+ 叠加 L2
   }
 
   return result;
@@ -825,7 +849,7 @@ server: {
   ├─ 前端展示附件预览（图片缩略图 / 文件卡片）
   │
   └─ 发送时随消息传给后端
-     POST /api/chat { message, chatId, attachments: [{ signedUrl, mimeType, name }] }
+     POST /api/chat { message, chatId, attachments: [{ url, mimeType, name }] }
        │
        └─ 后端按 mimeType 处理：
            ├─ image/* → 构建 image part（URL 方式，视觉模型支持）
@@ -930,14 +954,14 @@ VITE_API_BASE_URL=http://localhost:3001      # 新增：后端地址
 
 # server/.env（后端专用，绝不放 VITE_ 前缀）
 SUPABASE_URL=https://bfwtpofxsbiiepavfjcc.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...            # Dashboard > Settings > API > service_role
+SUPABASE_KEY=eyJ...            # Dashboard > Settings > API > service_role
 OPENAI_BASE_URL=https://api.codeturbo.ai/v1
 OPENAI_API_KEY=sk-b037...
 OPENAI_MODEL_ID=gpt-5.4-mini
 PORT=3001
 ```
 
-> ⚠️ **安全要点**：`SUPABASE_SERVICE_ROLE_KEY` 和 `OPENAI_API_KEY` 只能存在 `server/.env`，永远不放到 `VITE_` 前缀变量里，否则会打包进前端 bundle 暴露给用户。
+> ⚠️ **安全要点**：`SUPABASE_KEY` 和 `OPENAI_API_KEY` 只能存在 `server/.env`，永远不放到 `VITE_` 前缀变量里，否则会打包进前端 bundle 暴露给用户。
 
 ---
 

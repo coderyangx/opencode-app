@@ -1,21 +1,21 @@
 {
   "compilerOptions": {
     "experimentalDecorators": true,
-    "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "node",
-    "jsx": "react",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
     "baseUrl": ".",
-    "noImplicitAny":false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
-    "outDir": "dist",
-    "rootDir": "src",
+    "skipLibCheck": true,
+    "strict": false,
     "paths": {
-      "components": ["components"],
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*"]
     },
-  "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["dist", "node_modules", "src/**/__tests__"]
+  "include": ["src/**/*", "worker/**/*"],
+  "exclude": ["dist", "node_modules"]
 }

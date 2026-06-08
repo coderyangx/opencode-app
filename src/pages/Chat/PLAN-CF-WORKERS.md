@@ -88,7 +88,7 @@ opencode-app/
   }
   // 敏感变量通过 wrangler secret 命令写入，不放这里：
   // wrangler secret put SUPABASE_URL
-  // wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+  // wrangler secret put SUPABASE_KEY
   // wrangler secret put OPENAI_BASE_URL
   // wrangler secret put OPENAI_API_KEY
 }
@@ -157,7 +157,7 @@ import { UnauthorizedError, IllegalArgumentError, NotFoundError } from './util/e
 type Env = {
   ASSETS: Fetcher;
   SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
+  SUPABASE_KEY: string;
   OPENAI_BASE_URL: string;
   OPENAI_API_KEY: string;
   OPENAI_MODEL_ID: string;
@@ -203,11 +203,8 @@ Workers 没有 `process.env`，所有环境变量通过 `c.env` 访问。
 import { createClient } from '@supabase/supabase-js';
 
 // 接收 env 参数，而不是直接读 process.env
-export function createSupabaseAdmin(env: {
-  SUPABASE_URL: string;
-  SUPABASE_SERVICE_ROLE_KEY: string;
-}) {
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+export function createSupabaseAdmin(env: { SUPABASE_URL: string; SUPABASE_KEY: string }) {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 }
@@ -302,7 +299,7 @@ npm run deploy
 
 # 写入敏感环境变量（只需执行一次）
 wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+wrangler secret put SUPABASE_KEY
 wrangler secret put OPENAI_BASE_URL
 wrangler secret put OPENAI_API_KEY
 ```

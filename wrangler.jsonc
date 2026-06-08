@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "opencode-app",
+  "compatibility_date": "2025-08-03",
+  "main": "./worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "OPENAI_MODEL_ID": "gpt-5.4-mini",
+    "FRONTEND_URL": "https://opencode-app.workers.dev"
+  }
+  // 敏感变量通过 wrangler secret 命令写入：
+  // wrangler secret put SUPABASE_URL
+  // wrangler secret put SUPABASE_KEY
+  // wrangler secret put OPENAI_BASE_URL
+  // wrangler secret put OPENAI_API_KEY
+}

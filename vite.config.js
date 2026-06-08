@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { cloudflare } from '@cloudflare/vite-plugin';
+import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), cloudflare()],
+  resolve: {
+    alias: { '@': path.resolve(__dirname, './src') }
+  },
 
   // CSS 预处理器
   css: {
@@ -88,8 +93,8 @@ export default defineConfig({
 
   // 开发服务器配置（可选）
   server: {
-    // 开启 gzip 压缩
     compress: true
+    // 不再需要 proxy，前后端同 Worker，@cloudflare/vite-plugin 统一处理
   }
 });
 
