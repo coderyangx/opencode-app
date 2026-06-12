@@ -1,15 +1,16 @@
-import type { UIMessage } from 'ai';
+import type { ToolCallPart, ToolUIPart, UIMessage } from 'ai';
 
 const CONTEXT_WINDOW_CHARS = 800_000;
 const TOOL_RESULT_KEEP_RECENT = 4;
 const TOOL_RESULT_MAX_CHARS = 200;
 
-/** 压缩上下文 */
+/** 压缩上下文 根据字符长度粗估，超过窗口60%自动压缩 */
 export function compactMessages(messages: UIMessage[]): UIMessage[] {
   const size = JSON.stringify(messages).length;
   const ratio = size / CONTEXT_WINDOW_CHARS;
 
-  if (ratio < 0.6) return messages;
+  // if (ratio < 0.6) return messages;
+  if (ratio < 0.7) return messages;
 
   let result = applyL1(messages);
 
@@ -29,18 +30,19 @@ function applyL1(messages: UIMessage[]): UIMessage[] {
 
   return messages.map((msg, i) => {
     if (i >= keepFrom || msg.role !== 'assistant') return msg;
-    const compactedParts = (msg.parts ?? []).map((part: unknown) => {
-      const p = part as Record<string, unknown>;
-      if (p.type !== 'tool-invocation') return part;
-      const invocation = p.toolInvocation as Record<string, unknown> | undefined;
-      const result = invocation?.result;
+    const compactedParts = (msg.parts ?? []).map((part) => {
+      const p = part; //  as Record<string, unknown>;
+      if (!p.type.includes('tool-')) return part;
+      const invocation = p as ToolUIPart;
+      // TODO tool 调用压缩 tool 内容压缩
+      const result = invocation?.output;
       if (typeof result !== 'string' || result.length <= TOOL_RESULT_MAX_CHARS) return part;
       return {
-        ...p,
-        toolInvocation: {
-          ...invocation,
-          result: result.slice(0, TOOL_RESULT_MAX_CHARS) + ' [output truncated]'
-        }
+        // ...p,
+        // toolInvocation: {
+        ...invocation,
+        output: result.slice(0, TOOL_RESULT_MAX_CHARS) + ' [output has been truncated]'
+        // }
       };
     });
     return { ...msg, parts: compactedParts as UIMessage['parts'] };

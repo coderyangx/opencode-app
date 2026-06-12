@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { FastingProvider } from '../../hooks/useFasting';
-import supabase from '../../supabaseClient';
+import supabase from '../../lib/supabaseClient';
 import Timer from '../../components/Timer';
 import FastingPlanSelector from '../../components/FastingPlanSelector';
 import Stats from '../../components/Stats';

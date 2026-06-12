@@ -888,7 +888,7 @@ Use `React.cache()` for server-side request deduplication. Authentication and da
 ```typescript
 import { cache } from 'react';
 
-export const getCurrentUser = cache(async () => {
+export const getUser = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) return null;
   return await db.user.findUnique({
@@ -897,7 +897,7 @@ export const getCurrentUser = cache(async () => {
 });
 ```
 
-Within a single request, multiple calls to `getCurrentUser()` execute the query only once.
+Within a single request, multiple calls to `getUser()` execute the query only once.
 
 **Avoid inline objects as arguments:**
 

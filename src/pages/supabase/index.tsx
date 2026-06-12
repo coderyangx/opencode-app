@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Form } from '@douyinfe/semi-ui';
 import { FastingProvider } from '../../hooks/useFasting';
-import {
-  getProducts,
-  createProduct,
-  Product,
-  CreateProductData,
-  getCurrentUser
-} from '../../services/supabase';
-import supabase from '../../supabaseClient';
+import { getProducts, createProduct, Product, CreateProductData } from '../../services/supabase';
 import './index.css';
 
 // 模拟products
@@ -89,7 +82,6 @@ const Supabase = () => {
 
   useEffect(() => {
     fetchProducts();
-    getCurrentUser();
   }, []);
 
   const fetchProducts = async () => {

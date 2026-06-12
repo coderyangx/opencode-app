@@ -1,10 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Toaster } from 'sonner';
+import { AuthProvider } from './lib/AuthContext';
 import App from './App';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  // <StrictMode>
+  <AuthProvider>
     <App />
-  </StrictMode>
+    <Toaster position='top-center' richColors closeButton />
+  </AuthProvider>
+  // </StrictMode>
 );

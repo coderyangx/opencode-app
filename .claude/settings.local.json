@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(find /Users/yangxu/Desktop/sandbox/client/src -type f | sort && echo \"---\" && find /Users/yangxu/Desktop/opencode-app/src/pages/Chat/layout -type f | sort)",
+      "Read(//Users/yangxu/Desktop/sandbox/client/src/**)",
+      "Bash(python3)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")"
     ]
   }
 }

@@ -1,54 +1,59 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button, Form, Toast } from '@douyinfe/semi-ui';
-import { IconUser, IconMail, IconLock, IconUserAdd } from '@douyinfe/semi-icons';
-import { signIn, signUp } from '../../services/supabase';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button, Form } from '@douyinfe/semi-ui';
+import { User, Mail, Lock } from 'lucide-react';
+import Mascot from './Mascot';
+import { loginApi } from '../../services/supabase';
 import './index.less';
+import { toast } from 'sonner';
 
-interface AuthProps {
+interface LoginProps {
   onAuthSuccess?: () => void;
 }
 
-export default function Auth({ onAuthSuccess }: AuthProps) {
+export default function Login({ onAuthSuccess }: LoginProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string })?.from ?? '/chat';
 
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [coverEyes, setCoverEyes] = useState(false);
 
   const handleLogin = async (values: { username?: string; email: string; password: string }) => {
     const { username, email, password } = values;
-    if (!email || !password) return Toast.error('请填写邮箱和密码');
+    if (!email || !password) return toast.error('请填写邮箱和密码');
 
     try {
       setLoading(true);
       if (isLogin) {
         // 登录
         // const res = await supabase.auth.signInWithOtp({ email });
-        await signIn({ email, password });
-        // 跳转首页
-        navigate('/');
+        await loginApi.signIn({ email, password });
+        navigate(from, { replace: true });
         onAuthSuccess?.();
-        return Toast.success('登录成功！');
+        return toast.success('登录成功！');
       }
       // 注册
       if (!username) {
-        Toast.error('请填写用户名');
+        toast.error('请填写用户名');
         setLoading(false);
         return;
       }
-      await signUp({
+      await loginApi.signUp({
         email,
         password,
-        options: {
-          data: {
-            username,
-          },
-        },
+        options: { data: { username } }
       });
-      Toast.success('注册成功！请查收验证邮件');
+      // toast.success('注册成功！请查收验证邮件');
+      // 邮件验证已在 Supabase Dashboard 关闭，注册后直接登录
+      await loginApi.signIn({ email, password });
+      navigate(from, { replace: true });
+      onAuthSuccess?.();
+      toast.success('注册成功！');
     } catch (error: any) {
       console.error('认证错误:', error);
-      Toast.error(error.message || (isLogin ? '登录失败' : '注册失败'));
+      toast.error(error.message || (isLogin ? '登录失败' : '注册失败'));
     } finally {
       setLoading(false);
     }
@@ -56,15 +61,17 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
+    setCoverEyes(false);
   };
 
   return (
     <div className='login-container'>
       <div className='login-card'>
         <div className='login-header'>
-          <div className='login-icon'>
+          {/* <div className='login-icon'>
             {isLogin ? <IconUser size='extra-large' /> : <IconUserAdd size='extra-large' />}
-          </div>
+          </div> */}
+          <Mascot hideEyes={coverEyes} />
           <h2 className='login-title'>{isLogin ? '欢迎回来' : '创建账户'}</h2>
           <p className='login-subtitle'>{isLogin ? '登录您的账户以继续' : '注册一个新账户'}</p>
         </div>
@@ -72,7 +79,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
         <Form
           className='login-form'
           layout='vertical'
-          labelPosition='left'
+          labelPosition='top'
           labelWidth={70}
           // getFormApi={(formApi) => (api.current = formApi)}
           // onValueChange={(values) => setEmail(values.email)}
@@ -83,7 +90,8 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
               field='username'
               label='用户名'
               placeholder='请输入用户名'
-              prefix={<IconUser />}
+              prefix={<User size={16} />}
+              autoComplete='off'
               rules={[{ required: !isLogin, message: '请输入用户名' }]}
             />
           )}
@@ -91,10 +99,11 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             field='email'
             label='邮箱'
             placeholder='请输入邮箱地址'
-            prefix={<IconMail />}
+            prefix={<Mail size={16} />}
+            autoComplete='off'
             rules={[
               { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' },
+              { type: 'email', message: '请输入有效的邮箱地址' }
             ]}
           />
           <Form.Input
@@ -102,10 +111,12 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             field='password'
             label='密码'
             placeholder='请输入密码'
-            prefix={<IconLock />}
+            prefix={<Lock size={16} />}
+            onFocus={() => setCoverEyes(true)}
+            onBlur={() => setCoverEyes(false)}
             rules={[
               { required: true, message: '请输入密码' },
-              { min: 6, message: '密码至少6位' },
+              { min: 6, message: '密码至少6位' }
             ]}
           />
 
@@ -115,11 +126,13 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
             type='primary'
             size='large'
             block
-            loading={loading}
             disabled={loading}
-            className='login-submit-btn'
+            className={`login-submit-btn${loading ? ' is-loading' : ''}`}
           >
-            {isLogin ? '登录' : '注册'}
+            <span className='btn-loading-content'>
+              {loading && <span className='btn-spinner' />}
+              {isLogin ? '登录' : '注册'}
+            </span>
           </Button>
         </Form>
 

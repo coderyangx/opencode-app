@@ -560,7 +560,7 @@
  *
  * 文件：
  *   后端：src/api/agent.ts（或 Express route）
- *   前端：src/pages/Fasting/ChatPage.tsx（利用现有 Fasting 目录）
+ *   前端：src/pages/Fasting/Chat.tsx（利用现有 Fasting 目录）
  *
  * 后端 API（以 Express 为例）：
  *

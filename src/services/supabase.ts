@@ -1,4 +1,8 @@
-import supabase from '../supabaseClient';
+import {
+  SignInWithPasswordCredentials,
+  SignUpWithPasswordCredentials
+} from '@supabase/supabase-js';
+import supabase from '../lib/supabaseClient';
 
 const TABLE_PRODUCTS = 'products';
 const TABLE_ORDERS = 'orders';
@@ -9,54 +13,70 @@ const responseData = (res) => {
   return data;
 };
 
-// 注册
-export const signUp = async (data: { email: string; password: string; options?: any }) => {
-  const { email, password, options } = data;
-  const res = await supabase.auth.signUp({
-    email,
-    password,
-    options
-  });
-  return responseData(res);
+type SignInEmailCredentials = Extract<SignInWithPasswordCredentials, { email: string }>;
+type SignUpEmailCredentials = Extract<SignUpWithPasswordCredentials, { email: string }>;
+
+export const loginApi = {
+  /** 注册（邮箱 + 密码，关闭邮件验证后注册即生效） */
+  signUp: async (data: SignUpEmailCredentials) => {
+    const { email, password, options } = data;
+    const { data: res, error } = await supabase.auth.signUp({ email, password, options });
+    if (error) {
+      console.log('[注册失败]', error);
+      throw new Error(error.message);
+    }
+    console.log('[注册成功]', res);
+    // TODO 同步写入自维护的用户表
+    if (res.user) {
+      const { error: e } = await supabase.from('user_accounts').insert({
+        auth_id: res.user.id,
+        email,
+        username: options?.data?.username || '',
+        password
+      });
+      if (e) console.warn('[user_accounts 写入失败]', e.message);
+    }
+    return res;
+  },
+
+  /** 邮箱密码登录 */
+  signIn: async (data: SignInEmailCredentials) => {
+    const { email, password } = data;
+    const { data: res, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.log('[登录失败]', error);
+      throw new Error(error.message);
+    }
+    console.log('[登录成功]', res.user);
+    // 更新自维护用户表的最近登录时间
+    if (res.user) {
+      const { error: e } = await supabase
+        .from('user_accounts')
+        .update({ last_sign_in_at: new Date().toISOString() })
+        .eq('auth_id', res.user.id);
+      if (e) console.warn('[user_accounts 更新失败]', e.message);
+    }
+    return res;
+  },
+
+  /** 退出 */
+  signOut: async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
+  }
+
+  /** 获取当前登录用户（无 session 返回 null） */
+  // getUser: async () => {
+  //   const {
+  //     data: { session }
+  //   } = await supabase.auth.getSession();
+  //   if (!session) return null;
+  //   const { data, error } = await supabase.auth.getUser();
+  //   console.log('supabase getUser', data);
+  //   if (error) throw new Error(error.message);
+  //   return data.user;
+  // }
 };
-
-// 登录
-export const signIn = async (data: { email: string; password: string }) => {
-  const { email, password } = data;
-  const res = await supabase.auth.signInWithPassword({
-    email,
-    password
-  });
-  return responseData(res);
-};
-
-// 退出
-export const logout = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(error.message);
-};
-
-// 获取用户信息
-export async function getCurrentUser() {
-  const { data: session } = await supabase.auth.getSession();
-  console.log('getCurrentUser session', session);
-
-  const res1 = await supabase.auth.getUser();
-  const { data, error } = res1;
-  console.log('getCurrentUser userinfo', data?.user, res1);
-
-  if (!session.session && !data?.user) return null;
-
-  supabase.auth.onAuthStateChange(async () => {
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
-    console.log('onAuthStateChange userinfo', user);
-  });
-
-  if (error) throw new Error(error.message);
-  return data?.user;
-}
 
 export interface Product {
   id: number;
@@ -98,8 +118,19 @@ export const deleteProduct = async (id: number) => {
 };
 
 // 修改
-export const updateProduct = async ({ id, updateProduct }: { id: number; updateProduct: EditProductData }) => {
-  const res = await supabase.from(TABLE_PRODUCTS).update(updateProduct).eq('id', id).select().single();
+export const updateProduct = async ({
+  id,
+  updateProduct
+}: {
+  id: number;
+  updateProduct: EditProductData;
+}) => {
+  const res = await supabase
+    .from(TABLE_PRODUCTS)
+    .update(updateProduct)
+    .eq('id', id)
+    .select()
+    .single();
   return responseData(res);
 };
 

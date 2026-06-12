@@ -13,7 +13,7 @@ const options = {
   //   detectSessionInUrl: true,
   // },
   global: {
-    headers: { 'x-my-custom-header': 'FASTING-APP' }
+    headers: { 'x-my-custom-header': 'opencode-app-client' }
   }
 };
 

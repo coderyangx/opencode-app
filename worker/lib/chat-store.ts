@@ -38,7 +38,8 @@ export async function saveUserMessage(env: Env, id: string, msg: UIMessage): Pro
       conversation_id: id,
       role: 'user',
       parts: msg.parts ?? [],
-      metadata: {}
+      metadata: {},
+      status: 'done'
     },
     { onConflict: 'id', ignoreDuplicates: true }
   );
@@ -53,7 +54,8 @@ export async function saveAssistantMessage(env: Env, id: string, msg: UIMessage)
       conversation_id: id,
       role: 'assistant',
       parts: msg.parts ?? [],
-      metadata: (msg as unknown as Record<string, unknown>).metadata ?? {}
+      metadata: msg.metadata ?? {},
+      status: 'done'
     },
     { onConflict: 'id' }
   );
@@ -61,6 +63,16 @@ export async function saveAssistantMessage(env: Env, id: string, msg: UIMessage)
     .from('conversations')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', id);
+}
+
+// 流中断或出错时将消息标记为对应状态
+export async function markMessageStatus(
+  env: Env,
+  msgId: string,
+  status: 'interrupted' | 'error'
+): Promise<void> {
+  const supabase = createSupabaseAdmin(env);
+  await supabase.from('messages').update({ status }).eq('id', msgId);
 }
 
 // 首轮对话结束后异步生成标题

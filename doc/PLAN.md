@@ -233,14 +233,14 @@ create policy "delete_own_files" on storage.objects
 
 ### 现有代码复用
 
-- `src/services/supabase.ts`：`signIn` / `signUp` / `logout` / `getCurrentUser` ✅ 直接复用
+- `src/services/supabase.ts`：`signIn` / `signUp` / `logout` / `getUser` ✅ 直接复用
 - `src/pages/Login/index.tsx`：登录/注册表单 ✅ 直接复用
 - `src/components/AuthRoute.tsx`：路由守卫 ⚠️ 小幅改进
 
 ### AuthRoute 改进（消除 null 状态白屏）
 
 ```typescript
-// 用 onAuthStateChange 替代每次 async getCurrentUser()
+// 用 onAuthStateChange 替代每次 async getUser()
 // null → 'loading'，避免直接跳转
 useEffect(() => {
   supabase.auth
@@ -889,7 +889,7 @@ opencode-app/
     │       │   ├── Sidebar.tsx      左侧会话列表（按日期分组）
     │       │   │   ├── NewChatButton.tsx
     │       │   │   ├── SearchBar.tsx
-    │       │   │   └── ConversationItem.tsx
+    │       │   │   └── ConversationAction.tsx
     │       │   └── TopBar.tsx       模型选择器 + 设置按钮
     │       ├── chat/
     │       │   ├── ChatWindow.tsx   消息滚动区（自动吸底）
@@ -900,7 +900,7 @@ opencode-app/
     │       │   │   ├── TextPart.tsx         Markdown + 代码高亮
     │       │   │   ├── ReasoningPart.tsx    思考过程折叠面板
     │       │   │   └── ToolInvocationPart.tsx  工具调用卡片
-    │       │   ├── MessageActions.tsx   复制/重发/点赞/点踩
+    │       │   ├── ActionToolbar.tsx   复制/重发/点赞/点踩
     │       │   └── TypingIndicator.tsx  AI 思考中动画
     │       ├── input/
     │       │   ├── InputBar.tsx          主输入区域

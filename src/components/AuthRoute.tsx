@@ -1,30 +1,34 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { getCurrentUser } from '../services/supabase';
+import { useAuth } from '../lib/AuthContext';
 
-export default function AuthRoute({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
+/**
+ * 受保护路由守卫。
+ * session 状态来自全局 AuthContext（App 根层统一订阅）
+ */
+export default function AuthRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await getCurrentUser();
-        setIsAuthenticated(!!user);
-      } catch (error) {
-        console.error('认证检查失败:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: '#ffffff'
+        }}
+        className='auth-route'
+      >
+        <div className='loading-spinner' />
+      </div>
+    );
+  }
 
-    checkAuth();
-  }, []);
-
-  // 重定向，并记录当前路径
-  if (!isAuthenticated) {
+  if (!session) {
     return <Navigate to='/login' state={{ from: location.pathname }} replace />;
   }
 

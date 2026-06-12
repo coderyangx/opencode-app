@@ -9,7 +9,7 @@ function Home() {
   useEffect(() => {
     // TODO 用户空闲时预加载 About
     setTimeout(() => {
-      import('./About');
+      import('./Admin');
     }, 0);
   }, []);
 
