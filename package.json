@@ -54,6 +54,19 @@
   "engines": {
     "node": ">=22"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.49.0",
+    "@rollup/rollup-linux-x64-musl": "4.49.0",
+    "@rollup/rollup-linux-arm64-gnu": "4.49.0",
+    "@tiptap/suggestion": "3.26.1",
+    "lightningcss-linux-x64-gnu": "1.32.0",
+    "lightningcss-linux-x64-musl": "1.32.0",
+    "lightningcss-linux-arm64-gnu": "1.32.0",
+    "@esbuild/linux-x64": "0.25.9",
+    "@esbuild/linux-arm64": "0.25.9",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.1",
+    "@tailwindcss/oxide-linux-arm64-gnu": "4.3.1"
+  },
   "overrides": {
     "@tiptap/core": "3.26.1",
     "@tiptap/pm": "3.26.1",
