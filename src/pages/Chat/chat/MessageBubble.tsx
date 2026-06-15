@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import {
   isFileUIPart,
   isToolUIPart,
@@ -11,7 +12,6 @@ import ReasoningPart from './parts/ReasoningPart';
 import ToolInvocationPart from './parts/ToolInvocationPart';
 import ActionToolbar from './ActionToolbar';
 import { fileTypeConfig } from '@/utils/file';
-import { useCallback, useEffect, useState } from 'react';
 
 interface Props {
   message: UIMessage;
@@ -152,7 +152,19 @@ export default function MessageBubble({ message, isStreaming, onRegenerate }: Pr
               );
             return null;
           })}
-          {parts.length === 0 && isStreaming && <span className='typing-cursor' />}
+          {parts.length === 0 && isStreaming && (
+            // 跳动圆点
+            <div className='flex items-center gap-1.5 h-5 mt-0.5'>
+              {[0, 200, 400].map((delay) => (
+                <span
+                  key={delay}
+                  className='w-1.5 h-1.5 rounded-full bg-gray-300 animate-[typing-bounce_1.2s_ease-in-out_infinite]'
+                  style={{ animationDelay: `${delay}ms` }}
+                />
+              ))}
+            </div>
+          )}
+          {/* {parts.length === 0 && isStreaming && <span className='typing-cursor' />} */}
 
           {/* 内容为空且非流式 = 生成失败，显示错误占位提示 */}
           {!isStreaming && text.trim() === '' && (

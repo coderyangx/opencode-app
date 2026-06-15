@@ -184,6 +184,7 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
                 onRegenerate={i === messages.length - 1 && !isStreaming ? regenerate : undefined}
               />
             ))}
+            {/* TODO AI 回复时的跳跃 loading */}
             {isStreaming && messages.at(-1)?.role === 'user' && <TypingIndicator />}
           </>
         )}
