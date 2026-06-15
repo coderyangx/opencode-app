@@ -28,3 +28,22 @@ export function createSupabaseAdmin(env: SupabaseEnv): SupabaseClient {
   _cachedKey = env.SUPABASE_KEY;
   return _client;
 }
+
+/**
+ * 创建携带用户 JWT 的 Supabase client。
+ * Storage / DB 操作会以该用户身份执行，满足 RLS 策略要求。
+ */
+export function createSupabaseWithToken(env: SupabaseEnv, accessToken: string): SupabaseClient {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_KEY, {
+    global: {
+      headers: {
+        'x-my-custom-header': 'opencode-app-worker',
+        Authorization: `Bearer ${accessToken}`
+      }
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}

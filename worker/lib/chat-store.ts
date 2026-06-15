@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { getModel } from './model';
 import { createSupabaseAdmin } from './supabase';
+import { logger } from '../util/logger';
 import type { UIMessage } from 'ai';
 
 type Env = {
@@ -46,19 +47,39 @@ export async function saveUserMessage(env: Env, id: string, msg: UIMessage): Pro
 }
 
 // onFinish 后写入 assistant 消息 + 更新会话时间
-export async function saveAssistantMessage(env: Env, id: string, msg: UIMessage): Promise<void> {
+export async function saveAssistantMessage(
+  env: Env,
+  id: string,
+  msg: UIMessage,
+  isContinuation = false
+): Promise<void> {
+  // 防止空 id 写入（generateMessageId 未配置时 SDK 会返回空字符串）
+  if (!msg.id) {
+    logger.error('[chat] saveAssistantMessage: responseMessage.id is empty, skipping');
+    return;
+  }
   const supabase = createSupabaseAdmin(env);
-  await supabase.from('messages').upsert(
-    {
+  if (isContinuation) {
+    // regenerate 场景：直接 UPDATE，覆盖旧内容，保留原 created_at（顺序不变）
+    await supabase
+      .from('messages')
+      .update({
+        parts: msg.parts ?? [],
+        metadata: msg.metadata ?? {},
+        status: 'done'
+      })
+      .eq('id', msg.id);
+  } else {
+    // 正常回复：INSERT
+    await supabase.from('messages').insert({
       id: msg.id,
       conversation_id: id,
       role: 'assistant',
       parts: msg.parts ?? [],
       metadata: msg.metadata ?? {},
       status: 'done'
-    },
-    { onConflict: 'id' }
-  );
+    });
+  }
   await supabase
     .from('conversations')
     .update({ updated_at: new Date().toISOString() })

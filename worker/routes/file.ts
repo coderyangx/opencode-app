@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createSupabaseAdmin as getSupabase } from '../lib/supabase';
+import { createSupabaseWithToken } from '../lib/supabase';
 import type { Env, Variables } from '../index';
 import { formatSize } from '@/utils/file';
 
@@ -23,15 +23,16 @@ file.post('/upload', async (c) => {
   const fileData = formData.get('file') as File | null;
   if (!fileData) return c.json({ ok: false, error: 'no file' }, 400);
 
+  // UUID 作为存储 key，原始文件名通过 name 字段返回前端展示
   const ext = fileData.name.split('.').pop() ?? 'bin';
-  // const storagePath = `uploads/${fileData.name}`;
-  const storagePath = `${user.id}/${fileData.name}-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  // const bytes = await fileData.arrayBuffer();
+  const storagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
-  const supabase = getSupabase(c.env);
+  // 使用带用户 JWT 的 client，使 Storage RLS 策略能识别当前用户身份
+  const token = c.req.header('Authorization')?.replace('Bearer ', '') ?? '';
+  const supabase = createSupabaseWithToken(c.env, token);
   const { error } = await supabase.storage
     .from('attachments')
-    .upload(storagePath, fileData, { contentType: fileData.type, upsert: false }); // upsert true 代表如果存在可以覆盖
+    .upload(storagePath, fileData, { contentType: fileData.type, upsert: false });
 
   if (error) return c.json({ ok: false, error: error.message }, 500);
 

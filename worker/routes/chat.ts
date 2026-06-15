@@ -4,6 +4,7 @@ import {
   createAgentUIStreamResponse,
   isLoopFinished,
   stepCountIs,
+  generateId,
   type UIMessage
 } from 'ai';
 import { getModel } from '../lib/model';
@@ -46,10 +47,9 @@ chat.post('/', async (c) => {
   // 2. 立即持久化 user 消息（防流中断丢消息）
   await saveUserMessage(c.env, id, lastUserMsg);
 
-  // 3. 加载历史（从 DB 取，确保幂等；DB 是唯一来源）
-  // const history = await loadChat(c.env, id);
-  const history = messages;
-  const isFirstTurn = history.length === 1;
+  // 3. 从 DB 加载历史，缺确保幂等作为 originalMessages 的基准，确保 id 准确，避免续写/重试时主键冲突）
+  const history = await loadChat(c.env, id);
+  const isFirstTurn = history.length === 0;
 
   // 4. 上下文压缩（L1 + L2）
   // const compactedMsgs = compactMessages(history);
@@ -79,9 +79,9 @@ chat.post('/', async (c) => {
   // 通常传从数据库读出的 history（未压缩的原始记录）
   return createAgentUIStreamResponse({
     agent,
-    uiMessages: history,
-    originalMessages: history,
-    // generateMessageId: generateId, // 为 responseMessage 生成 message ID
+    uiMessages: messages, // LLM 上下文用前端传来的（含完整附件信息等）
+    originalMessages: history, // 持久化基准用 DB 里的（id 准确，避免主键冲突）
+    generateMessageId: generateId, // 必传！否则 responseMessage.id 为 undefined，多条消息会覆盖
     ...(abortSignal ? { abortSignal } : {}),
     // headers: {
     //   'X-Response-Origin': 'cloudflare-worker'
@@ -91,13 +91,25 @@ chat.post('/', async (c) => {
     onFinish: async (opts) => {
       const { responseMessage, messages, isAborted, isContinuation, finishReason } = opts;
       // console.log('onFinish', isAborted, isContinuation, finishReason);
-      console.log('onFinish---responseMessage', responseMessage);
+      console.log('onFinish---responseMessage', isContinuation, responseMessage);
       // console.log('onFinish---messages', messages);
       try {
         // 持久化 assistant 消息，responseMessage 是本轮生成的 assistant 消息
+        // 如果重新生成，responseMessage 会包含所有的历史回复
         if (responseMessage) {
           assistantMsgId = responseMessage.id;
-          await saveAssistantMessage(c.env, id, responseMessage);
+          // isContinuation 时 SDK 把旧 parts + 新 parts 合并在了 responseMessage 里
+          // 需要截掉旧内容，只保留本次新生成的 parts
+          const oldAssistantMsg = isContinuation ? history[history.length - 1] : null;
+          const newParts = oldAssistantMsg
+            ? responseMessage.parts.slice(oldAssistantMsg.parts.length)
+            : responseMessage.parts;
+          await saveAssistantMessage(
+            c.env,
+            id,
+            { ...responseMessage, parts: newParts },
+            isContinuation
+          );
         }
         // stream 是否被终止
         // if (isAborted) {}
