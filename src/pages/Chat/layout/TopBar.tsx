@@ -93,8 +93,10 @@ export default function TopBar({ title, model, models, onModelChange, onOpenSett
         {title || '新对话'}
       </span>
       <div className='flex items-center gap-2'>
-        {/* TODO 模型选择 */}
-        {/* <ModelSelect value={model} options={models} onChange={onModelChange} /> */}
+        {/* TODO 模型选择 coderGPTModel */}
+        {localStorage.getItem('coderGPTModel') && (
+          <ModelSelect value={model} options={models} onChange={onModelChange} />
+        )}
         {/* TODO 系统提示词设置面板 settingspanel  */}
         {/* <IconButton onClick={onOpenSettings} title='设置' size='md' variant='ghost'>
           <IconSetting size='small' />

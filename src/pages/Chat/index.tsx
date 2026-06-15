@@ -11,7 +11,13 @@ import Sidebar from './layout/Sidebar';
 import SkeletonMessages from './chat/SkeletonMessages';
 import './chat.less';
 
-const DEFAULT_MODELS: Model[] = [{ id: 'gpt-5.4-mini', label: 'GPT-5.4-Mini' }];
+const DEFAULT_MODELS: Model[] = [
+  { id: 'gpt-5.5', label: 'GPT-5.5' },
+  { id: 'gpt-5.4', label: 'GPT-5.4' },
+  { id: 'gpt-5.4-mini', label: 'GPT-5.4-Mini' }
+  // TODO 生成图像模型
+  // { id: 'gpt-image-2', label: 'GPT-Image-2' }
+];
 
 export default function Chat() {
   const navigate = useNavigate();

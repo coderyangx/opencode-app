@@ -29,7 +29,7 @@ A fasting tracker app with an AI assistant powered by Vercel AI SDK.
 | Pinme（去中心化）         | xxx                                          |
 | hono-cf-worker (后端仓库) | https://github.com/coderyangx/hono-cf-worker |
 
----
+## localStorage 设置 coderGPTModel，打开模型选择
 
 > 相关链接：
 >
