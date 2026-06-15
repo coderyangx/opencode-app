@@ -130,7 +130,13 @@ export default function MessageBubble({ message, isStreaming, onRegenerate }: Pr
         <div className='flex-1 min-w-0'>
           {parts.map((part, i) => {
             if (part.type === 'reasoning' && (part as ReasoningUIPart).text)
-              return <ReasoningPart key={i} reasoning={part.text} />;
+              return (
+                <ReasoningPart
+                  key={i}
+                  reasoning={part.text}
+                  isStreaming={isStreaming && (part as ReasoningUIPart).state === 'streaming'}
+                />
+              );
             // if (part.type.includes('tool-') && (part as ToolUIPart).input)
             if (isToolUIPart(part))
               return (

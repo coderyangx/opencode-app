@@ -23,8 +23,8 @@ A fasting tracker app with an AI assistant powered by Vercel AI SDK.
 
 | 平台                      | 地址                                         |
 | ------------------------- | -------------------------------------------- |
-| Fasting Pages             | https://app.aicoder.dpdns.org                |
-| Fasting Pages (备用)      | https://fasting.aicoder.dpdns.org            |
+| coderGPT(本项目)          | https://aicoder.dpdns.org                    |
+| Fasting Pages             | https://fasting.aicoder.dpdns.org            |
 | Agent Pages               | https://agent.aicoder.dpdns.org              |
 | Pinme（去中心化）         | xxx                                          |
 | hono-cf-worker (后端仓库) | https://github.com/coderyangx/hono-cf-worker |
