@@ -8,6 +8,7 @@ import {
   type UIMessage
 } from 'ai';
 import { getModel } from '../lib/model';
+import { buildSystemPrompt } from '../lib/system-prompt';
 import {
   loadChat,
   saveUserMessage,
@@ -20,6 +21,34 @@ import { NotFoundError } from '../util/errors';
 import { logger } from '../util/logger';
 import { compactMessages } from '../util/context-manager';
 import type { Env, Variables } from '../index';
+
+/**
+ * TODO：流式断连和恢复、网络关闭和切会话重连、真正的流式恢复(比较复杂，需实时写入 KV，MVP不建议做)
+  前后端 status: 'done'正常完成 | 'streaming'流式中 | 'error'出错 | 'interrupted'用户中断/断联
+  断连发生
+      ↓
+  onError 回调触发
+      ↓
+  后端将 assistantMsgId 标记为 status='interrupted'（已实现）
+      ↓
+  前端 toast 提示"生成被中断"
+      ↓
+  消息气泡底部显示[继续生成]按钮（而不是重新生成）
+      ↓
+  用户点击 → 发送特殊指令 → 后端检测到 isContinuation 场景进行续写
+
+KV / Durable Objects：真正的流式恢复(3-5PD)
+  生成中的内容 → 实时写入 KV / Durable Objects
+      ↓
+  断连 → 客户端记录 lastEventId
+      ↓
+  重连 → 携带 lastEventId 请求
+      ↓
+  后端从 KV 读取已生成内容，从断点处继续 stream
+ */
+const LANGFUSE_SECRET_KEY = 'sk-lf-3f651909-870f-45d1-83bd-eedabd230365';
+const LANGFUSE_PUBLIC_KEY = 'pk-lf-42c12906-b498-4853-abd5-320260532821';
+const LANGFUSE_BASE_URL = 'https://langfuse.sankuai.com';
 
 const chat = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -57,6 +86,7 @@ chat.post('/', async (c) => {
   // 5. 创建 ToolLoopAgent
   const agent = new ToolLoopAgent({
     model: getModel(c.env, conv.model),
+    instructions: buildSystemPrompt(),
     tools: {
       // 扩展点：memory、web_search、code_exec 等 tool 加在此处
     },
@@ -90,6 +120,7 @@ chat.post('/', async (c) => {
     // onStepFinish: (stepResult) => {},
     onFinish: async (opts) => {
       const { responseMessage, messages, isAborted, isContinuation, finishReason } = opts;
+      // isContinuation 处理续写场景
       // console.log('onFinish', isAborted, isContinuation, finishReason);
       console.log('onFinish---responseMessage', isContinuation, responseMessage);
       // console.log('onFinish---messages', messages);
@@ -123,7 +154,7 @@ chat.post('/', async (c) => {
       }
     },
     onError: (err: string) => {
-      // 流出错时标记 assistant 消息（若已有 id）
+      // TODO 流式断连和恢复，网络断连， 流出错时标记 assistant 消息（若已有 id）
       if (assistantMsgId) {
         markMessageStatus(c.env, assistantMsgId, 'error').catch((e) => {
           logger.error('[server] onError', e);
@@ -132,7 +163,7 @@ chat.post('/', async (c) => {
       return err as string;
     }
   });
-  // 用户中断（abortSignal）时标记 user 消息为 interrupted
+  // TODO 用户中断（abortSignal）时标记 user 消息为 interrupted
   // （abortSignal.onabort 在 createAgentUIStreamResponse 返回后已无法可靠捕获，
   //  依赖前端 stop() 时自行感知；此处仅做 onError 兜底）
 });

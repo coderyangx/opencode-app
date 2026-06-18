@@ -47,6 +47,7 @@ export default function TextPart({ text, isUser, showCursor }: Props) {
               const code = (node ? extractNodeText(node) : String(children)).replace(/\n$/, '');
               if (!isBlock)
                 return (
+                  // text-red-600 text-[#10b981]
                   <code className='bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded text-[0.87em] text-red-600 font-mono'>
                     {children}
                   </code>

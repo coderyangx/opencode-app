@@ -23,8 +23,8 @@ interface Props {
 
 function extractText(msg: UIMessage) {
   return (msg.parts ?? [])
-    .filter((p: unknown) => (p as { type: string }).type === 'text')
-    .map((p: unknown) => (p as { text: string }).text)
+    .filter((p) => p.type === 'text')
+    .map((p) => p.text)
     .join('');
 }
 
@@ -37,9 +37,12 @@ export default function MessageBubble({ message, isStreaming, onRegenerate }: Pr
   // Assistant messages 可能有 text, reasoning, tool invocation, and file parts
   const parts = message.parts ?? [];
   const text = extractText(message);
+  console.log('消息展示', message.role, 'parts', parts, 'text', text);
 
   // ── 用户消息：右对齐气泡
   if (isUser) {
+    // console.log('消息展示', message.parts, 'text', text);
+
     // 用户消息的图片附件 parts（type=file + image/* mediaType）
     const imageParts = parts.filter(
       (p) => isFileUIPart(p) && p.mediaType.startsWith('image/')

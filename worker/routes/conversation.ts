@@ -77,6 +77,7 @@ conversation.get('/:id/messages', async (c) => {
   const convId = c.req.param('id');
 
   // 一次查询：通过 conversations 的 user_id 做隐式鉴权
+  // TODO 返回的 status 字段可以用来判断该回复是否被中断，从而实现 继续生成、恢复生成
   const { data, error } = await getSupabase(c.env)
     .from('messages')
     .select('id, role, parts, metadata, status, created_at, conversations!inner(user_id)')

@@ -75,7 +75,7 @@ src/
 | `/`         | 断食计时器       | ✓        |
 | `/login`    | 登录             | —        |
 | `/home`     | Home             | ✓        |
-| `/about`    | About            | ✓        |
+| `/admin`    | Admin后台管理    | ✓        |
 | `/supabase` | 数据展示（商品） | —        |
 
 ---
