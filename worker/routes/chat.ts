@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
 import {
-  ToolLoopAgent,
-  createAgentUIStreamResponse,
   isLoopFinished,
   stepCountIs,
+  convertToModelMessages,
+  streamText,
+  type UIMessage,
+  type TextUIPart,
   generateId,
-  type UIMessage
+  consumeStream
 } from 'ai';
 import { getModel } from '../lib/model';
 import { buildSystemPrompt } from '../lib/system-prompt';
@@ -19,7 +21,6 @@ import {
 import { createSupabaseAdmin } from '../lib/supabase';
 import { NotFoundError } from '../util/errors';
 import { logger } from '../util/logger';
-import { compactMessages } from '../util/context-manager';
 import type { Env, Variables } from '../index';
 
 /**
@@ -36,29 +37,36 @@ import type { Env, Variables } from '../index';
   消息气泡底部显示[继续生成]按钮（而不是重新生成）
       ↓
   用户点击 → 发送特殊指令 → 后端检测到 isContinuation 场景进行续写
-
-KV / Durable Objects：真正的流式恢复(3-5PD)
-  生成中的内容 → 实时写入 KV / Durable Objects
-      ↓
-  断连 → 客户端记录 lastEventId
-      ↓
-  重连 → 携带 lastEventId 请求
-      ↓
-  后端从 KV 读取已生成内容，从断点处继续 stream
- */
-const LANGFUSE_SECRET_KEY = 'sk-lf-3f651909-870f-45d1-83bd-eedabd230365';
-const LANGFUSE_PUBLIC_KEY = 'pk-lf-42c12906-b498-4853-abd5-320260532821';
-const LANGFUSE_BASE_URL = 'https://langfuse.sankuai.com';
-
+*/
 const chat = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// /api/chat  Body: { messages: UIMessage[], id: string }  (AI SDK v4 格式)
+// 全局 AbortController Map：conversationId → AbortController
+// CF Workers 单实例内有效；前端 stop 时通过 DELETE /api/chat/:id/stop 触发
+// 原因：CF Workers 的 c.req.raw.signal 不随客户端断开而触发（平台限制）
+const abortControllers = new Map<string, AbortController>();
+
+// DELETE /api/chat/:id/stop  前端 stop() 时额外调用，通知后端手动 abort
+chat.delete('/:id/stop', async (c) => {
+  const id = c.req.param('id');
+  const ctrl = abortControllers.get(id);
+  if (ctrl) {
+    ctrl.abort('user_stop');
+    abortControllers.delete(id);
+  }
+  return c.json({ ok: true });
+});
+
+// /api/chat  Body: { messages: UIMessage[], id: string }  (AI SDK v6 格式)
 chat.post('/', async (c) => {
   const user = c.get('user');
   const { messages, id } = await c.req.json();
-  const abortSignal = c.req.raw.signal;
 
-  // 取最后一条 user 消息作为"当前轮次输入"
+  // 自建 AbortController，供 streamText 使用
+  const abortController = new AbortController();
+  abortControllers.set(id, abortController);
+  const abortSignal = abortController.signal;
+
+  // 取最后一条 user 消息
   const incomingMessages: UIMessage[] = Array.isArray(messages) ? messages : [];
   const lastUserMsg = [...incomingMessages].reverse().find((m) => m.role === 'user');
   if (!lastUserMsg) throw new Error('no user message');
@@ -76,96 +84,145 @@ chat.post('/', async (c) => {
   // 2. 立即持久化 user 消息（防流中断丢消息）
   await saveUserMessage(c.env, id, lastUserMsg);
 
-  // 3. 从 DB 加载历史，缺确保幂等作为 originalMessages 的基准，确保 id 准确，避免续写/重试时主键冲突）
+  // 3. 从 DB 加载历史，传给 originalMessages
+  // SDK 会据此：
+  //   - 若末尾是 assistant（regenerate）→ responseMessage.id 复用旧 id，isContinuation=true
+  //   - 否则 → 通过 generateMessageId 生成新 id，isContinuation=false
   const history = await loadChat(c.env, id);
   const isFirstTurn = history.length === 0;
 
-  // 4. 上下文压缩（L1 + L2）
-  // const compactedMsgs = compactMessages(history);
+  // 记录 regenerate 场景下旧 assistant 消息的 parts 数量
+  // isContinuation=true 时，SDK 把「旧 parts + 新 parts」合并进 responseMessage，
+  // 需要截取只保留新生成的 parts 再持久化，否则会把历史内容重复写入 DB
+  const lastHistoryMsg = history[history.length - 1];
+  const oldPartsCount =
+    lastHistoryMsg?.role === 'assistant' ? (lastHistoryMsg.parts?.length ?? 0) : 0;
 
-  // 5. 创建 ToolLoopAgent
-  const agent = new ToolLoopAgent({
-    model: getModel(c.env, conv.model),
-    instructions: buildSystemPrompt(),
-    tools: {
-      // 扩展点：memory、web_search、code_exec 等 tool 加在此处
-    },
-    stopWhen: [stepCountIs(20), isLoopFinished()],
-    maxOutputTokens: 10000
-    // onFinish
+  // 4. 将前端 UIMessage[] 转为 CoreMessage[]
+  const modelMessages = await convertToModelMessages(incomingMessages, { tools: {} });
+
+  // 5. 外部 Promise 桥接：onFinish 持久化完成后 resolve，waitUntil 等它
+  // 原因：CF Workers 在 HTTP 响应结束后会 kill 进程，不等任何 pending 异步任务，
+  // 必须通过 waitUntil 告知 runtime "这个 Promise 完成之前不要 kill"
+  let persistResolve!: () => void;
+  let persistReject!: (e: unknown) => void;
+  const persistPromise = new Promise<void>((res, rej) => {
+    persistResolve = res;
+    persistReject = rej;
   });
 
-  // 记录本轮 assistant 消息 id，供中断时标记
-  let assistantMsgId: string | null = null;
+  // 6. streamText 流式生成
+  // 设计说明：
+  // - consumeStream() 放入 waitUntil，保证前端 stop() 后后端继续跑完流并触发 onFinish
+  // - toUIMessageStreamResponse() 同步返回 Response 给前端（两者共享同一底层流，SDK 内部 tee）
+  // - onAbort 在 abort 时立即标记 interrupted（快速响应）
+  // - onFinish 在流结束后触发持久化
+  const result = streamText({
+    model: getModel(c.env, conv.model),
+    system: buildSystemPrompt(),
+    messages: modelMessages,
+    tools: {},
+    stopWhen: [stepCountIs(20), isLoopFinished()],
+    maxOutputTokens: 10000,
+    abortSignal,
+    onError: ({ error }) => {
+      logger.error('[server] streamText onError', error);
+      persistResolve(); // 出错时 resolve，避免 waitUntil 永远 pending
+      abortControllers.delete(id);
+    }
+  });
 
-  // 6. 流式执行
-  // uiMessages（Agent 的输入上下文）
-  //  传给 agent.run() 执行的历史消息，SDK 把它转换成 model messages 送给 LLM，不影响 ID 生成
-  //  通常传压缩后的历史（如你的 compactedMsgs）
-  // originalMessages（持久化模式的触发器）
-  // 告诉 SDK "我在做持久化，这是数据库里的原始消息"，传入后 SDK 会：
-  // 自动为 responseMessage 分配 ID
-  // 如果最后一条是 assistant 消息（续写场景），把新内容追加到它上面（isContinuation: true）
-  // 通常传从数据库读出的 history（未压缩的原始记录）
-  return createAgentUIStreamResponse({
-    agent,
-    uiMessages: messages, // LLM 上下文用前端传来的（含完整附件信息等）
-    originalMessages: history, // 持久化基准用 DB 里的（id 准确，避免主键冲突）
-    generateMessageId: generateId, // 必传！否则 responseMessage.id 为 undefined，多条消息会覆盖
-    ...(abortSignal ? { abortSignal } : {}),
-    // headers: {
-    //   'X-Response-Origin': 'cloudflare-worker'
-    // },
-    // status: 200,
-    // onStepFinish: (stepResult) => {},
-    onFinish: async (opts) => {
-      const { responseMessage, messages, isAborted, isContinuation, finishReason } = opts;
-      // isContinuation 处理续写场景
-      // console.log('onFinish', isAborted, isContinuation, finishReason);
-      console.log('onFinish---responseMessage', isContinuation, responseMessage);
-      // console.log('onFinish---messages', messages);
+  // 7. 返回流式响应，持久化逻辑放在 toUIMessageStreamResponse 的 onFinish 里
+  // SDK 在 onFinish 里提供：
+  //   - responseMessage：已组装好的完整 UIMessage（含所有 parts），无需手动 buildPartsFromSteps
+  //   - isContinuation：是否 regenerate（SDK 通过对比 originalMessages 末尾 id 自动判断）
+  //   - isAborted：是否被 abort（靠流中的 abort chunk，由 abortSignal 触发注入）
+  const response = result.toUIMessageStreamResponse({
+    originalMessages: history as UIMessage[],
+    generateMessageId: generateId,
+    // TODO CF 里不起作用，需要用下文的实现。
+    // 消费完整流，保证刷新可回复内容。它不会处理或返回流中的数据，仅确保整个流被完整读取
+    consumeSseStream: consumeStream,
+    onFinish: async ({ responseMessage, isAborted, isContinuation }) => {
+      logger.info('[server] onFinish', { msgId: responseMessage?.id, isContinuation, isAborted });
       try {
-        // 持久化 assistant 消息，responseMessage 是本轮生成的 assistant 消息
-        // 如果重新生成，responseMessage 会包含所有的历史回复
-        if (responseMessage) {
-          assistantMsgId = responseMessage.id;
-          // isContinuation 时 SDK 把旧 parts + 新 parts 合并在了 responseMessage 里
-          // 需要截掉旧内容，只保留本次新生成的 parts
-          const oldAssistantMsg = isContinuation ? history[history.length - 1] : null;
-          const newParts = oldAssistantMsg
-            ? responseMessage.parts.slice(oldAssistantMsg.parts.length)
-            : responseMessage.parts;
-          await saveAssistantMessage(
-            c.env,
-            id,
-            { ...responseMessage, parts: newParts },
-            isContinuation
-          );
+        // isContinuation=true 时 SDK 把「旧 parts + 新 parts」合并进 responseMessage，
+        // 需要截掉旧内容，只保留本次新生成的 parts，否则历史内容会被重复写入
+        const rawMsg = responseMessage as UIMessage;
+        const newParts = isContinuation ? rawMsg.parts.slice(oldPartsCount) : rawMsg.parts;
+        const parsedMsg = parseThinkingParts({ ...rawMsg, parts: newParts });
+        // isContinuation=true（regenerate）→ UPDATE 旧记录；否则 INSERT
+        await saveAssistantMessage(c.env, id, parsedMsg, isContinuation);
+        // 用户主动终止：标记 interrupted
+        if (isAborted) {
+          await markMessageStatus(c.env, responseMessage.id, 'interrupted');
         }
-        // stream 是否被终止
-        // if (isAborted) {}
-        // 首轮生成标题
-        if (isFirstTurn) {
+        // 首轮生成标题（仅正常完成时）
+        if (isFirstTurn && !isAborted) {
           const firstText = (lastUserMsg.parts?.[0] as { text?: string })?.text ?? '';
           generateTitle(c.env, id, firstText);
         }
+        persistResolve();
       } catch (error) {
-        logger.error('[server] onFinish', error);
+        logger.error('[server] onFinish persist error', error);
+        persistReject(error);
+      } finally {
+        abortControllers.delete(id);
       }
     },
-    onError: (err: string) => {
-      // TODO 流式断连和恢复，网络断连， 流出错时标记 assistant 消息（若已有 id）
-      if (assistantMsgId) {
-        markMessageStatus(c.env, assistantMsgId, 'error').catch((e) => {
-          logger.error('[server] onError', e);
-        });
-      }
-      return err as string;
+    onError: (err) => {
+      persistResolve(); // 出错时也要 resolve，避免 waitUntil 永远 pending
+      abortControllers.delete(id);
+      return String(err);
     }
   });
-  // TODO 用户中断（abortSignal）时标记 user 消息为 interrupted
-  // （abortSignal.onabort 在 createAgentUIStreamResponse 返回后已无法可靠捕获，
-  //  依赖前端 stop() 时自行感知；此处仅做 onError 兜底）
+
+  // 8. waitUntil 双保险：
+  //   - consumeStream()：独立消费整个底层流，确保前端 stop() 断开 SSE 后流仍被消费，
+  //     从而触发 toUIMessageStreamResponse 的 onFinish 持久化
+  //   - persistPromise：onFinish 里 resolve，精确等待持久化 DB 操作完成
+  // 两者都需要：consumeStream 保证 onFinish 能触发；persistPromise 保证入库跑完
+  const ctx = c.executionCtx as { waitUntil?: (p: Promise<unknown>) => void } | undefined;
+  ctx?.waitUntil(Promise.resolve(result.consumeStream()));
+  ctx?.waitUntil(persistPromise);
+
+  return response;
 });
+
+/**
+ * 解析模型输出中的 <thinking>...</thinking> 标签，
+ * 将 responseMessage 的 text parts 拆分为 reasoning + text 两种 parts。
+ * 用于在没有原生推理 token 时，通过提示词模拟推理展示。
+ */
+function parseThinkingParts(msg: UIMessage): UIMessage {
+  const newParts: UIMessage['parts'] = [];
+  for (const part of msg.parts ?? []) {
+    if (part.type !== 'text') {
+      newParts.push(part);
+      continue;
+    }
+    const text = (part as TextUIPart).text ?? '';
+    // 匹配 <thinking>...</thinking>，支持多段、跨行
+    const thinkingRe = /<thinking>([\s\S]*?)<\/thinking>/gi;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = thinkingRe.exec(text)) !== null) {
+      // thinking 前面的普通文本
+      if (match.index > lastIndex) {
+        const before = text.slice(lastIndex, match.index).trim();
+        if (before) newParts.push({ type: 'text', text: before });
+      }
+      // reasoning part
+      const reasoning = match[1].trim();
+      if (reasoning)
+        newParts.push({ type: 'reasoning', text: reasoning } as UIMessage['parts'][number]);
+      lastIndex = match.index + match[0].length;
+    }
+    // thinking 后面的普通文本
+    const after = text.slice(lastIndex).trim();
+    if (after) newParts.push({ type: 'text', text: after });
+  }
+  return { ...msg, parts: newParts };
+}
 
 export default chat;

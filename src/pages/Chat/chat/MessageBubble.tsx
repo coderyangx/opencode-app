@@ -17,6 +17,7 @@ interface Props {
   message: UIMessage;
   /** 流式输出中（仅对 assistant 消息最后一条有意义） */
   isStreaming?: boolean;
+  isAbort: boolean;
   /** 最后一条 assistant 消息才传，触发重新生成 */
   onRegenerate?: () => void;
 }
@@ -28,7 +29,7 @@ function extractText(msg: UIMessage) {
     .join('');
 }
 
-export default function MessageBubble({ message, isStreaming, onRegenerate }: Props) {
+export default function MessageBubble({ message, isStreaming, isAbort, onRegenerate }: Props) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxName, setLightboxName] = useState<string | undefined>(undefined);
   const closeLightbox = useCallback(() => setLightboxUrl(null), []);
@@ -189,6 +190,9 @@ export default function MessageBubble({ message, isStreaming, onRegenerate }: Pr
           {/* ActionToolbar：非流式且有内容时展示，左对齐 */}
           {!isStreaming && text.trim().length > 0 && (
             <div className='mt-1'>
+              {isAbort && (
+                <span className='text-[#11192573] text-[13px]'>已终止生成，可重新生成</span>
+              )}
               <ActionToolbar text={text} isUser={false} onRegenerate={onRegenerate} />
             </div>
           )}

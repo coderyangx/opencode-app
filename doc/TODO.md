@@ -131,3 +131,7 @@ hash 路由 VS history 路由，参考 [pages/ReactStudy/Router.tsx]('../src/pag
 ### React 组件间过渡动画如何实现？
 
 在React中实现组件间过渡动画可以使⽤ `React Transition Group` 库。该库提供了⼀组组件，可以在组件进⼊或离开 DOM 时添加或删除 CSS 类名，从⽽实现过渡动画效果。CSSTransition（单组件动画）；多组件切换动画：SwitchTransition；列表动画：TransitionGroup。
+
+### 为什么 file 输入框不能受控？
+
+因为⽂件是⽤户本地隐私数据，React 不能通过 state 赋值 value 控制，只能由⽤户⼿动选择，所以天⽣⾮受控

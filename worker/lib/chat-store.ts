@@ -86,6 +86,22 @@ export async function saveAssistantMessage(
     .eq('id', id);
 }
 
+// 重新生成场景：删除 conversation 中最后一条 assistant 消息
+export async function deleteLastAssistantMessage(env: Env, conversationId: string): Promise<void> {
+  const supabase = createSupabaseAdmin(env);
+  // 取最后一条 assistant 消息的 id
+  const { data } = await supabase
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('role', 'assistant')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  if (!data?.id) return;
+  await supabase.from('messages').delete().eq('id', data.id);
+}
+
 // 流中断或出错时将消息标记为对应状态
 export async function markMessageStatus(
   env: Env,
