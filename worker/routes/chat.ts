@@ -1,16 +1,18 @@
 import { Hono } from 'hono';
 import {
-  isLoopFinished,
-  stepCountIs,
-  convertToModelMessages,
   streamText,
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  generateId,
   type UIMessage,
   type TextUIPart,
-  generateId,
-  consumeStream
+  type UIMessageChunk,
+  stepCountIs,
+  isLoopFinished
 } from 'ai';
 import { getModel } from '../lib/model';
 import { buildSystemPrompt } from '../lib/system-prompt';
+import { tools } from '../lib/tools';
 import {
   loadChat,
   saveUserMessage,
@@ -23,31 +25,130 @@ import { NotFoundError } from '../util/errors';
 import { logger } from '../util/logger';
 import type { Env, Variables } from '../index';
 
-/**
- * TODO：流式断连和恢复、网络关闭和切会话重连、真正的流式恢复(比较复杂，需实时写入 KV，MVP不建议做)
-  前后端 status: 'done'正常完成 | 'streaming'流式中 | 'error'出错 | 'interrupted'用户中断/断联
-  断连发生
-      ↓
-  onError 回调触发
-      ↓
-  后端将 assistantMsgId 标记为 status='interrupted'（已实现）
-      ↓
-  前端 toast 提示"生成被中断"
-      ↓
-  消息气泡底部显示[继续生成]按钮（而不是重新生成）
-      ↓
-  用户点击 → 发送特殊指令 → 后端检测到 isContinuation 场景进行续写
-*/
 const chat = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// 全局 AbortController Map：conversationId → AbortController
-// CF Workers 单实例内有效；前端 stop 时通过 DELETE /api/chat/:id/stop 触发
-// 原因：CF Workers 的 c.req.raw.signal 不随客户端断开而触发（平台限制）
+// ── Resume 恢复/续写能力 机制 ──────────────────────────────────────────────────────────────
+// 本质是：重建 prompt + 对齐 token 流 + continuation decoding
+// 设计：
+//   POST 发起生成时，将 UIMessageStream tee() 成两份：
+//     - stream1：给本次请求前端消费（正常流式输出）
+//     - stream2：立即在后台 reader 消费，将每个 UIMessageChunk
+//               序列化后缓存到 ActiveStream.chunks 数组里
+//
+//   GET /:id/stream（resume 端点）收到请求时：
+//     - 从 ActiveStream.chunks 拿已缓存的内容立即发出
+//     - 之后挂起等待新 chunks（通过 waitNext Promise 通知）
+//     - 后台 reader 完成后（done=true）客户端流关闭
+//
+// 关键：必须后台消费 stream2，否则 tee() 的背压机制会卡住 stream1，
+// 导致前端收流不完整、onFinish 不触发、数据库无法入库。
+//
+// ⚠️ CF Workers 生产环境限制：
+//   后台消费 stream2 的 async 循环必须放在 waitUntil 中，
+//   否则响应返回后 Worker 会提前 kill 进程，stream2 消费中断。
+
+interface ActiveStream {
+  /** 已序列化的 UIMessageChunk 字符串列表（供 resume replay 使用） */
+  chunks: string[];
+  /** 流是否已全部产出 */
+  done: boolean;
+  /** 用户主动终止（abort），刷新后不应 resume */
+  aborted: boolean;
+  /** 每次有新 chunk 或 done=true 时 resolve，供 GET /stream 的 pull 等待 */
+  waitNext: Promise<void>;
+  notifyNext: () => void;
+}
+
+/** 创建空的 ActiveStream 状态槽 */
+function createActiveStream(): ActiveStream {
+  let notifyNext!: () => void;
+  const waitNext = new Promise<void>((res) => {
+    notifyNext = res;
+  });
+  return { chunks: [], done: false, aborted: false, waitNext, notifyNext };
+}
+
+/** 追加一个 chunk（JSON 序列化后存储）并通知等待方 */
+function pushChunk(active: ActiveStream, chunk: UIMessageChunk) {
+  // SDK 内部用 \n 分隔 SSE data 行，这里存原始 chunk 对象的 JSON，
+  // 由 GET /stream 端点重新编码成 SSE 格式发出。
+  // 注意：createUIMessageStreamResponse 接收的是 UIMessageChunk 流，
+  // 不是已编码的 SSE 文本，所以直接 enqueue chunk 对象即可。
+  active.chunks.push(JSON.stringify(chunk));
+  const oldNotify = active.notifyNext;
+  // 重新挂一个新 Promise 供下次等待
+  let notifyNext!: () => void;
+  active.waitNext = new Promise<void>((res) => {
+    notifyNext = res;
+  });
+  active.notifyNext = notifyNext;
+  oldNotify();
+}
+
+/** 标记流结束，唤醒所有等待方 */
+function closeActiveStream(active: ActiveStream) {
+  active.done = true;
+  active.notifyNext();
+}
+
+const activeStreams = new Map<string, ActiveStream>();
+
+// AbortController Map：conversationId → AbortController
 const abortControllers = new Map<string, AbortController>();
 
-// DELETE /api/chat/:id/stop  前端 stop() 时额外调用，通知后端手动 abort
-chat.delete('/:id/stop', async (c) => {
+// ── 路由定义 ──────────────────────────────────────────────────────────────────
+
+// GET /:id/stream  AI SDK resume 端点
+// - 有进行中的流 → 200 + SSE（回放已缓存 chunks + 实时推送新 chunks）
+// - 无进行中的流 → 204（客户端静默跳过，走正常历史加载）
+chat.get('/:id/stream', async (c) => {
   const id = c.req.param('id');
+  const active = activeStreams.get(id);
+  if (!active) {
+    return c.body(null, 204);
+  }
+  // 用户已手动终止：不恢复流，返回 204，前端静默跳过走历史加载
+  // if (active.aborted) {
+  //   logger.info('[server] resume skip: stream was aborted by user', { id });
+  //   return c.body(null, 204);
+  // }
+
+  logger.info('[server] resume stream', { id, cachedChunks: active.chunks.length });
+
+  // 重建 UIMessageChunk ReadableStream，从缓存 + 实时追加
+  let cursor = 0; // token position
+  const chunkStream = new ReadableStream<UIMessageChunk>({
+    async pull(controller) {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        // 发出所有已缓存的 chunks
+        while (cursor < active.chunks.length) {
+          controller.enqueue(JSON.parse(active.chunks[cursor]) as UIMessageChunk);
+          cursor++;
+        }
+        // 如果后台已经消费完，关闭流
+        if (active.done) {
+          controller.close();
+          return;
+        }
+        // 等待新 chunk 或 done 信号
+        await active.waitNext;
+      }
+    }
+  });
+
+  return createUIMessageStreamResponse({ stream: chunkStream });
+});
+
+// GET /:id/stop  前端 stop() 时额外调用，通知后端手动 abort
+chat.get('/:id/stop', async (c) => {
+  const id = c.req.param('id');
+  // 立即标记 aborted，防止刷新后 GET /stream 误触发 resume
+  const active = activeStreams.get(id);
+  if (active) {
+    active.aborted = true;
+    closeActiveStream(active); // 唤醒所有等待，让消费循环尽快结束
+  }
   const ctrl = abortControllers.get(id);
   if (ctrl) {
     ctrl.abort('user_stop');
@@ -56,7 +157,7 @@ chat.delete('/:id/stop', async (c) => {
   return c.json({ ok: true });
 });
 
-// /api/chat  Body: { messages: UIMessage[], id: string }  (AI SDK v6 格式)
+// POST /  发送消息，启动流式生成
 chat.post('/', async (c) => {
   const user = c.get('user');
   const { messages, id } = await c.req.json();
@@ -84,8 +185,8 @@ chat.post('/', async (c) => {
   // 2. 立即持久化 user 消息（防流中断丢消息）
   await saveUserMessage(c.env, id, lastUserMsg);
 
-  // 3. 从 DB 加载历史，传给 originalMessages
-  // SDK 会据此：
+  // 3. 从 DB 加载历史，传给 toUIMessageStream 的 originalMessages
+  // SDK 据此：
   //   - 若末尾是 assistant（regenerate）→ responseMessage.id 复用旧 id，isContinuation=true
   //   - 否则 → 通过 generateMessageId 生成新 id，isContinuation=false
   const history = await loadChat(c.env, id);
@@ -112,22 +213,18 @@ chat.post('/', async (c) => {
   });
 
   // 6. streamText 流式生成
-  // 设计说明：
-  // - consumeStream() 放入 waitUntil，保证前端 stop() 后后端继续跑完流并触发 onFinish
-  // - toUIMessageStreamResponse() 同步返回 Response 给前端（两者共享同一底层流，SDK 内部 tee）
-  // - onAbort 在 abort 时立即标记 interrupted（快速响应）
-  // - onFinish 在流结束后触发持久化
   const result = streamText({
     model: getModel(c.env, conv.model),
     system: buildSystemPrompt(),
     messages: modelMessages,
-    tools: {},
+    tools: tools,
     stopWhen: [stepCountIs(20), isLoopFinished()],
     maxOutputTokens: 10000,
     abortSignal,
     onError: ({ error }) => {
       logger.error('[server] streamText onError', error);
-      persistResolve(); // 出错时 resolve，避免 waitUntil 永远 pending
+      persistResolve();
+      activeStreams.delete(id);
       abortControllers.delete(id);
     }
   });
@@ -137,12 +234,13 @@ chat.post('/', async (c) => {
   //   - responseMessage：已组装好的完整 UIMessage（含所有 parts），无需手动 buildPartsFromSteps
   //   - isContinuation：是否 regenerate（SDK 通过对比 originalMessages 末尾 id 自动判断）
   //   - isAborted：是否被 abort（靠流中的 abort chunk，由 abortSignal 触发注入）
-  const response = result.toUIMessageStreamResponse({
+  // const response = result.toUIMessageStreamResponse({
+  const uiStream = result.toUIMessageStream({
     originalMessages: history as UIMessage[],
     generateMessageId: generateId,
     // TODO CF 里不起作用，需要用下文的实现。
     // 消费完整流，保证刷新可回复内容。它不会处理或返回流中的数据，仅确保整个流被完整读取
-    consumeSseStream: consumeStream,
+    // consumeSseStream: consumeStream,
     onFinish: async ({ responseMessage, isAborted, isContinuation }) => {
       logger.info('[server] onFinish', { msgId: responseMessage?.id, isContinuation, isAborted });
       try {
@@ -167,26 +265,57 @@ chat.post('/', async (c) => {
         logger.error('[server] onFinish persist error', error);
         persistReject(error);
       } finally {
+        // 流结束后清理两个 Map，防止内存泄漏
+        activeStreams.delete(id);
         abortControllers.delete(id);
       }
     },
     onError: (err) => {
-      persistResolve(); // 出错时也要 resolve，避免 waitUntil 永远 pending
+      persistResolve();
+      const active = activeStreams.get(id);
+      if (active) closeActiveStream(active);
+      activeStreams.delete(id);
       abortControllers.delete(id);
       return String(err);
     }
   });
 
-  // 8. waitUntil 双保险：
-  //   - consumeStream()：独立消费整个底层流，确保前端 stop() 断开 SSE 后流仍被消费，
-  //     从而触发 toUIMessageStreamResponse 的 onFinish 持久化
-  //   - persistPromise：onFinish 里 resolve，精确等待持久化 DB 操作完成
-  // 两者都需要：consumeStream 保证 onFinish 能触发；persistPromise 保证入库跑完
-  const ctx = c.executionCtx as { waitUntil?: (p: Promise<unknown>) => void } | undefined;
-  ctx?.waitUntil(Promise.resolve(result.consumeStream()));
-  ctx?.waitUntil(persistPromise);
+  // tee：将 UIMessageChunk 流一分为二
+  //   - stream1：给本次 POST 请求前端（正常流式输出）
+  //   - stream2：后台立即消费，把每个 chunk 序列化缓存到 activeStreams
+  //
+  // 必须后台消费 stream2，否则 tee() 背压会阻塞 stream1！
+  const [stream1, stream2] = uiStream.tee();
 
-  return response;
+  // TODO 创建缓存槽，立刻注册，供 GET /stream 随时查询，用来恢复 stream
+  const active = createActiveStream();
+  activeStreams.set(id, active);
+
+  // 后台消费 stream2：把每个 chunk 序列化存入缓存
+  // 放在 waitUntil 中，防止 CF Workers 在响应返回后 kill 进程
+  const consumeStream2 = async () => {
+    const reader = stream2.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        pushChunk(active, value);
+      }
+    } catch (err) {
+      logger.error('[server] consume stream2 error', err);
+    } finally {
+      reader.releaseLock();
+      // 确保 closeActiveStream 被调用（onFinish 里也会调，加幂等判断）
+      if (!active.done) closeActiveStream(active);
+    }
+  };
+
+  const ctx = c.executionCtx as { waitUntil?: (p: Promise<unknown>) => void } | undefined;
+  // waitUntil 同时等：后台消费 stream2 + 持久化完成
+  ctx?.waitUntil(Promise.all([consumeStream2(), persistPromise]));
+
+  // stream1 给本次请求前端
+  return createUIMessageStreamResponse({ stream: stream1 });
 });
 
 /**

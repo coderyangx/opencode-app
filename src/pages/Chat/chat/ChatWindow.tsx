@@ -47,7 +47,7 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
     // 历史加载完成后设置，historyStatus === 'loading' 时 initialMessages 是空数组，不影响
     messages: initialMessages ?? [],
     // TODO 流恢复  Enable automatic stream resumption
-    resume: true,
+    // resume: true,
     transport: new DefaultChatTransport({
       api: '/api/chat',
       // headers 支持传函数（AI SDK 内部用 resolve() 调用），每次请求动态读取最新 token
@@ -55,7 +55,13 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
       // TODO 随着聊天记录变长，每次请求都把所有历史记录从客户端发给服务端会浪费带宽。
       // 我们可以优化为：客户端只发新消息，服务端负责拼接历史记录
       // 服务端：处理时先加载历史messages，再拼接新消息
-      prepareSendMessagesRequest: ({ messages, id }) => ({ body: { messages, id } })
+      prepareSendMessagesRequest: ({ messages, id }) => ({ body: { messages, id } }),
+      // resume 机制：组件挂载时 SDK 自动发 GET 请求尝试恢复正在进行的流
+      // 默认端点是 /api/chat/:id/stream，需要携带鉴权 header
+      prepareReconnectToStreamRequest: ({ id }) => ({
+        api: `/api/chat/${id}/stream`,
+        headers: getAuthHeaders()
+      })
     }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: (options) => {
@@ -86,20 +92,20 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
   // 原因：CF Workers 的 request.signal 不随客户端断开而触发，
   // 必须主动发 DELETE 请求让后端手动 abort AbortController
   const stopWithNotify = useCallback(() => {
+    stop();
     // fire-and-forget，不阻塞前端 UI 响应
-    // getAuthHeaders() 是同步的，直接拿头部发 DELETE 请求通知后端 abort
+    // 通知后端手动 abort：CF Workers 的 request.signal 不随客户端断开而触发，
+    // 必须主动发请求让后端 abortController.abort()
     fetch(`/api/chat/${conversation.id}/stop`, {
-      method: 'DELETE',
       headers: getAuthHeaders()
     }).catch(() => {
       /* 网络问题忽略，后端流最终会自然结束 */
     });
-    stop();
   }, [conversation.id, stop]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // 切换会话时先终止当前流，防止旧会话的流继续写入
-    stopWithNotify();
+    // stopWithNotify();
 
     // TODO 防止快速切换对话时竞态，组件销毁设为true，不消费返回结果
     let cancelled = false;
