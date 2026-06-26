@@ -1,78 +1,20 @@
 {
-  "name": "opencode-app",
+  "name": "data-agent",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.1",
-  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "dev:hono": "npx tsx worker/index.ts",
-    "build": "vite build",
-    "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.71",
-    "@ai-sdk/openai": "^3.0.53",
-    "@ai-sdk/react": "^3.0.199",
-    "@douyinfe/semi-ui": "^2.100.0",
-    "@hono/node-server": "^2.0.4",
-    "@supabase/supabase-js": "^2.98.0",
-    "@tailwindcss/vite": "^4.3.0",
-    "ai": "^6.0.168",
-    "axios": "^1.13.6",
-    "highlight.js": "^11.11.1",
-    "hono": "^4.12.23",
-    "lucide-react": "^1.17.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.13.1",
-    "rehype-highlight": "^7.0.2",
-    "remark-gfm": "^4.0.1",
-    "sonner": "^2.0.7",
-    "tailwindcss": "^4.3.0",
-    "zod": "^4.3.6"
+    "dev:widgets": "yarn workspace widgets dev",
+    "dev:server": "yarn workspace server dev",
+    "dev": "concurrently -n server,widgets -c blue,green \"yarn dev:server\" \"yarn dev:widgets\"",
+    "build:widgets": "yarn workspace widgets build",
+    "build:server": "yarn workspace server build",
+    "build": "yarn build:server && yarn build:widgets",
+    "start": "yarn workspace server start"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.40.0",
-    "@eslint/js": "^9.30.1",
-    "@types/node": "^25.9.2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "dotenv": "^17.4.2",
-    "eslint": "^9.30.1",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "less": "^4.5.1",
-    "vite": "^7.0.4",
-    "wrangler": "^4.98.0"
-  },
-  "engines": {
-    "node": ">=22"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.49.0",
-    "@rollup/rollup-linux-x64-musl": "4.49.0",
-    "@rollup/rollup-linux-arm64-gnu": "4.49.0",
-    "@tiptap/suggestion": "3.26.1",
-    "lightningcss-linux-x64-gnu": "1.32.0",
-    "lightningcss-linux-x64-musl": "1.32.0",
-    "lightningcss-linux-arm64-gnu": "1.32.0",
-    "@esbuild/linux-x64": "0.25.9",
-    "@esbuild/linux-arm64": "0.25.9",
-    "@tailwindcss/oxide-linux-x64-gnu": "4.3.1",
-    "@tailwindcss/oxide-linux-arm64-gnu": "4.3.1"
-  },
-  "overrides": {
-    "@tiptap/core": "3.26.1",
-    "@tiptap/pm": "3.26.1",
-    "@tiptap/suggestion": "3.26.1",
-    "prosemirror-model": "1.25.8",
-    "prosemirror-transform": "1.12.0",
-    "prosemirror-view": "1.41.9"
+    "concurrently": "^9.1.2"
   }
 }
