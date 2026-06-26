@@ -18,7 +18,8 @@ import {
   saveUserMessage,
   saveAssistantMessage,
   markMessageStatus,
-  generateTitle
+  generateTitle,
+  sanitizeUIMessages
 } from '../lib/chat-store';
 import { createSupabaseAdmin } from '../lib/supabase';
 import { NotFoundError } from '../util/errors';
@@ -26,6 +27,23 @@ import { logger } from '../util/logger';
 import type { Env, Variables } from '../index';
 
 const chat = new Hono<{ Bindings: Env; Variables: Variables }>();
+// User Request
+//    ↓
+// streamText (AI SDK)
+//    ↓
+// UIMessageStream (chunk stream)
+//    ↓
+// [State Sink] ← 保存 “最终 state”
+//    ↓
+// (断线)
+//    ↓
+// resume
+//    ↓
+// load state
+//    ↓
+// rebuild messages
+//    ↓
+// 重新 streamText（不是 replay）
 
 // ── Resume 恢复/续写能力 机制 ──────────────────────────────────────────────────────────────
 // 本质是：重建 prompt + 对齐 token 流 + continuation decoding
@@ -116,24 +134,37 @@ chat.get('/:id/stream', async (c) => {
   logger.info('[server] resume stream', { id, cachedChunks: active.chunks.length });
 
   // 重建 UIMessageChunk ReadableStream，从缓存 + 实时追加
-  let cursor = 0; // token position
+  //
+  // ⚠️ pull 的背压契约：每次调用 pull 只 enqueue 一个 chunk 然后返回，
+  // 下游消费者 ready 时 runtime 会再次调用 pull。
+  // 不能在 pull 里 while(true) 死循环 enqueue，否则背压失效，流会卡住。
+  let cursor = 0;
   const chunkStream = new ReadableStream<UIMessageChunk>({
     async pull(controller) {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        // 发出所有已缓存的 chunks
-        while (cursor < active.chunks.length) {
-          controller.enqueue(JSON.parse(active.chunks[cursor]) as UIMessageChunk);
-          cursor++;
-        }
-        // 如果后台已经消费完，关闭流
-        if (active.done) {
-          controller.close();
-          return;
-        }
-        // 等待新 chunk 或 done 信号
-        await active.waitNext;
+      // console.log('pull--', cursor, active);
+      // 有缓存的 chunk 直接发一个，runtime 会立即再次调用 pull 取下一个
+      if (cursor < active.chunks.length) {
+        controller.enqueue(JSON.parse(active.chunks[cursor]) as UIMessageChunk);
+        cursor++;
+        return;
       }
+      // 缓存消费完且后台已结束 → 关闭流
+      if (active.done) {
+        controller.close();
+        return;
+      }
+      // 等待后台推入新 chunk 或标记 done，再让 runtime 重新调用 pull
+      // 暂无新 chunk：等待后台 pushChunk() 唤醒
+      // ⚠️ await 之后必须立即 enqueue，不能直接 return：
+      //   pull 的职责是"提供数据"，空手返回会让 runtime 停止调用 pull
+      await active.waitNext;
+      // 被唤醒后，此时 chunks 一定有新数据或 done=true，enqueue 一个再返回
+      // if (cursor < active.chunks.length) {
+      //   controller.enqueue(JSON.parse(active.chunks[cursor]) as UIMessageChunk);
+      //   cursor++;
+      // } else if (active.done) {
+      //   controller.close();
+      // }
     }
   });
 
@@ -169,7 +200,9 @@ chat.post('/', async (c) => {
 
   // 取最后一条 user 消息
   const incomingMessages: UIMessage[] = Array.isArray(messages) ? messages : [];
-  const lastUserMsg = [...incomingMessages].reverse().find((m) => m.role === 'user');
+  // 防御：过滤空壳消息（parts 为空），避免 convertToModelMessages schema 校验失败
+  const safeIncoming = sanitizeUIMessages(incomingMessages);
+  const lastUserMsg = [...safeIncoming].reverse().find((m) => m.role === 'user');
   if (!lastUserMsg) throw new Error('no user message');
 
   // 1. 验证 conversation 归属
@@ -200,7 +233,7 @@ chat.post('/', async (c) => {
     lastHistoryMsg?.role === 'assistant' ? (lastHistoryMsg.parts?.length ?? 0) : 0;
 
   // 4. 将前端 UIMessage[] 转为 CoreMessage[]
-  const modelMessages = await convertToModelMessages(incomingMessages, { tools: {} });
+  const modelMessages = await convertToModelMessages(safeIncoming, { tools: {} });
 
   // 5. 外部 Promise 桥接：onFinish 持久化完成后 resolve，waitUntil 等它
   // 原因：CF Workers 在 HTTP 响应结束后会 kill 进程，不等任何 pending 异步任务，
@@ -221,6 +254,11 @@ chat.post('/', async (c) => {
     stopWhen: [stepCountIs(20), isLoopFinished()],
     maxOutputTokens: 10000,
     abortSignal,
+    prepareStep: (options) => {
+      console.log('prepareStep', options, options.experimental_context);
+      console.log('prepareStep-experimental_context', options.experimental_context);
+      return undefined;
+    },
     onError: ({ error }) => {
       logger.error('[server] streamText onError', error);
       persistResolve();
@@ -228,6 +266,7 @@ chat.post('/', async (c) => {
       abortControllers.delete(id);
     }
   });
+  // result.fullStream // 完整的响应流
 
   // 7. 返回流式响应，持久化逻辑放在 toUIMessageStreamResponse 的 onFinish 里
   // SDK 在 onFinish 里提供：
@@ -284,7 +323,7 @@ chat.post('/', async (c) => {
   //   - stream1：给本次 POST 请求前端（正常流式输出）
   //   - stream2：后台立即消费，把每个 chunk 序列化缓存到 activeStreams
   //
-  // 必须后台消费 stream2，否则 tee() 背压会阻塞 stream1！
+  // TODO 双流 tee，必须后台消费 stream2，否则 tee() 背压会阻塞 stream1！
   const [stream1, stream2] = uiStream.tee();
 
   // TODO 创建缓存槽，立刻注册，供 GET /stream 随时查询，用来恢复 stream

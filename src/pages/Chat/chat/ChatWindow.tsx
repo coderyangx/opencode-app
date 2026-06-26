@@ -42,14 +42,23 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
   // 用户是否主动上滚（上滚后暂停自动滚动，滚回底部后恢复）
   const isUserScrolledRef = useRef(false);
 
-  const { messages, setMessages, sendMessage, stop, regenerate, status } = useChat({
+  const {
+    messages,
+    setMessages,
+    sendMessage,
+    stop,
+    regenerate,
+    addToolApprovalResponse,
+    addToolOutput, // 用于前端增加工具调用结果（用于 服务端 tool 没有 execute 的场景）
+    status
+  } = useChat({
     id: conversation.id ?? undefined,
     // 历史加载完成后设置，historyStatus === 'loading' 时 initialMessages 是空数组，不影响
     messages: initialMessages ?? [],
     // TODO 流恢复  Enable automatic stream resumption
-    // resume: true,
+    resume: true,
     transport: new DefaultChatTransport({
-      api: '/api/chat',
+      api: '/api/chatV3',
       // headers 支持传函数（AI SDK 内部用 resolve() 调用），每次请求动态读取最新 token
       headers: getAuthHeaders,
       // TODO 随着聊天记录变长，每次请求都把所有历史记录从客户端发给服务端会浪费带宽。
@@ -63,6 +72,7 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
         headers: getAuthHeaders()
       })
     }),
+    // TODO HITL 关键配置
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: (options) => {
       console.log('onFinish', options);
@@ -224,6 +234,8 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
                 // 只有最后一条 assistant 消息才显示「已终止」提示
                 isAbort={isLastMsgAborted && i === messages.length - 1}
                 isStreaming={isStreaming && i === messages.length - 1}
+                // HITL：把审批回调传下去，供 ToolInvocationPart 调用
+                onToolApproval={addToolApprovalResponse}
                 onRegenerate={
                   i === messages.length - 1 && !isStreaming
                     ? () => {

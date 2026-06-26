@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { createSupabaseAdmin as getSupabase } from '../lib/supabase';
+import { sanitizeUIMessages } from '../lib/chat-store';
 import { NotFoundError } from '../util/errors';
 import type { Env } from '../index';
 
@@ -99,7 +100,8 @@ conversation.get('/:id/messages', async (c) => {
   //   .select('id, role, parts, metadata, status, created_at')
   //   .eq('conversation_id', convId)
   //   .order('created_at', { ascending: true });
-  return c.json(data ?? []);
+  // 过滤空壳消息（历史脏数据），避免前端加载后再次回传导致 SDK schema 校验失败
+  return c.json(sanitizeUIMessages((data ?? []) as any[]));
 });
 
 export default conversation;

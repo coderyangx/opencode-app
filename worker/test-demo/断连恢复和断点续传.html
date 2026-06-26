@@ -1,0 +1,84 @@
+<!doctype html>
+<html>
+
+<body>
+  <h2>SSE Demo (Last-Event-ID + Resume)</h2>
+  <div style="margin-bottom: 8px;">
+    <button id="btn-disconnect" onclick="disconnect()">手动断开</button>
+    <button id="btn-reconnect" onclick="reconnect()" disabled>重新连接</button>
+  </div>
+  <pre id="log"></pre>
+
+  <script>
+    const log = document.getElementById("log");
+    const btnDisconnect = document.getElementById("btn-disconnect");
+    const btnReconnect = document.getElementById("btn-reconnect");
+
+    let es = null;
+    let reconnectTimer = null;
+    let savedLastEventId = "0"; // 手动断开时保存，重连时通过 URL 参数传给服务端
+
+    function append(text) {
+      log.textContent += text + "\n";
+    }
+
+    function setConnected(connected) {
+      btnDisconnect.disabled = connected ? false : true;
+      btnReconnect.disabled = connected ? true : false;
+    }
+
+    function connect() {
+      // 清除待执行的自动重连任务（手动重连时可能有残留）
+      clearTimeout(reconnectTimer);
+
+      // savedLastEventId > 0 说明是手动断开后重连，通过 URL 参数续传
+      // 因为新建 EventSource 对象不会继承上一个对象的 lastEventId
+      const url = savedLastEventId !== "0"
+        ? `http://localhost:3008/sse?lastEventId=${savedLastEventId}`
+        : "http://localhost:3008/sse";
+
+      es = new EventSource(url);
+
+      es.onopen = () => {
+        append("✅ 已连接");
+        setConnected(true);
+      };
+
+      es.onmessage = (e) => {
+        savedLastEventId = e.lastEventId; // 实时更新，断开时能拿到最新值
+        append(`[id=${e.lastEventId}] ${e.data}`);
+      };
+
+      es.onerror = () => {
+        // readyState === CLOSED 说明是网络断开触发的（非手动 close）
+        // 手动 close 时我们已经在 disconnect() 里处理了，不需要再走这里
+        if (es.readyState !== EventSource.CLOSED) return;
+        append(`❌ 连接断开（lastEventId=${es.lastEventId}），3秒后自动重连...`);
+        setConnected(false);
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+    }
+
+    // 手动断开：保存 lastEventId，关闭连接，取消自动重连
+    function disconnect() {
+      clearTimeout(reconnectTimer);
+      if (es) {
+        savedLastEventId = es.lastEventId || savedLastEventId; // 保存断开前的 id
+        es.close();
+        es = null;
+      }
+      append(`🔌 手动断开（lastEventId=${savedLastEventId}），点击"重新连接"可从此处续传`);
+      setConnected(false);
+    }
+
+    // 手动重连
+    function reconnect() {
+      append("🔄 手动重连中...");
+      connect();
+    }
+
+    connect();
+  </script>
+</body>
+
+</html>

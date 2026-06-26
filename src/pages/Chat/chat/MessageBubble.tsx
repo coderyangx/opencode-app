@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   isFileUIPart,
   isToolUIPart,
+  type ChatAddToolApproveResponseFunction,
   type ReasoningUIPart,
   type ToolUIPart,
   type UIMessage
@@ -20,6 +21,8 @@ interface Props {
   isAbort: boolean;
   /** 最后一条 assistant 消息才传，触发重新生成 */
   onRegenerate?: () => void;
+  /** HITL 审批回调，传给 ToolInvocationPart 用于确认/拒绝 needsApproval 工具 */
+  onToolApproval?: ChatAddToolApproveResponseFunction;
 }
 
 function extractText(msg: UIMessage) {
@@ -29,7 +32,13 @@ function extractText(msg: UIMessage) {
     .join('');
 }
 
-export default function MessageBubble({ message, isStreaming, isAbort, onRegenerate }: Props) {
+export default function MessageBubble({
+  message,
+  isStreaming,
+  isAbort,
+  onRegenerate,
+  onToolApproval
+}: Props) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxName, setLightboxName] = useState<string | undefined>(undefined);
   const closeLightbox = useCallback(() => setLightboxUrl(null), []);
@@ -144,7 +153,11 @@ export default function MessageBubble({ message, isStreaming, isAbort, onRegener
             // if (part.type.includes('tool-') && (part as ToolUIPart).input)
             if (isToolUIPart(part))
               return (
-                <ToolInvocationPart key={part.toolCallId} toolInvocation={part as ToolUIPart} />
+                <ToolInvocationPart
+                  key={part.toolCallId}
+                  toolInvocation={part as ToolUIPart}
+                  onToolApproval={onToolApproval}
+                />
               );
             if (part.type === 'text' && part.text)
               return (
@@ -171,7 +184,8 @@ export default function MessageBubble({ message, isStreaming, isAbort, onRegener
           {/* {parts.length === 0 && isStreaming && <span className='typing-cursor' />} */}
 
           {/* 内容为空且非流式 = 生成失败，显示错误占位提示 */}
-          {!isStreaming && text.trim() === '' && (
+          {/* 但如果有 tool parts（如 approval-request），不算失败——模型调用了工具，只是没生成文本 */}
+          {!isStreaming && text.trim() === '' && !parts.some((p) => isToolUIPart(p)) && (
             <div className='flex items-center gap-2 text-[13.5px] text-red-500 py-0.5'>
               <AlertCircle size={14} className='shrink-0' />
               <span>内容生成失败</span>

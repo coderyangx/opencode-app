@@ -8,6 +8,7 @@ import { UnauthorizedError, IllegalArgumentError, NotFoundError } from './util/e
 import { logger } from './util/logger';
 import { authMiddleware } from './middleware/auth';
 import chatRoute from './routes/chat';
+import chatV3Route from './routes/chatV3';
 import conversationRoute from './routes/conversation';
 import modelRoute from './routes/model';
 import fileRoute from './routes/file';
@@ -65,6 +66,7 @@ app.get('/api/chat/test', async (c) => {
 app.use('/api/*', authMiddleware);
 
 app.route('/api/chat', chatRoute);
+app.route('/api/chatV3', chatV3Route); // ToolLoopAgent
 app.route('/api/conversations', conversationRoute);
 app.route('/api/models', modelRoute);
 app.route('/api/file', fileRoute);

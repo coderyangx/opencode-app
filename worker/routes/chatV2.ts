@@ -27,6 +27,7 @@ import { NotFoundError } from '../util/errors';
 import { logger } from '../util/logger';
 import { compactMessages } from '../util/context-manager';
 import type { Env, Variables } from '../index';
+import { tools } from 'worker/lib/tools';
 
 /**
  * TODO：流式断连和恢复、网络关闭和切会话重连、真正的流式恢复(比较复杂，需实时写入 KV，MVP不建议做)
@@ -89,13 +90,11 @@ chat.post('/', async (c) => {
   // 4. 上下文压缩（L1 + L2）
   // const compactedMsgs = compactMessages(history);
 
-  // 5. 创建 ToolLoopAgent
+  // 5. 创建
   const agent = new ToolLoopAgent({
     model: getModel(c.env, conv.model),
     instructions: buildSystemPrompt(),
-    tools: {
-      // 扩展点：memory、web_search、code_exec 等 tool 加在此处
-    },
+    tools: tools, // 扩展点：memory、web_search、code_exec 等 tool 加在此处
     stopWhen: [stepCountIs(20), isLoopFinished()],
     maxOutputTokens: 10000
     // onFinish: (options) => {options}
