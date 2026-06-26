@@ -4,6 +4,17 @@
 子 Agents 通过 tools 的方式接入到主 Agent，完全实现由 LLM 的调度
 提供数据接入、绘图、数学计算、日期格式化等工具供 Agent 调用
 
+1. 数据分析Agent（kuaida-agent），重点分支：
+   - 初期demo版本：release/M6 【HITL-工具调用sql需要确认】
+   - 支持引用人员、多步骤规划：feature/CLRXO-90917585/update-ui（8月份，0807）
+   - 基础版本：release/0811、release/0826
+   - 升级mastra：release/0909
+   - 大量问题优化：release/0916、
+
+2. 为什么不用标准 EventSource，而是用fetch+post请求模拟 SSE ？
+   - 核心原因：EventSource 只支持 GET，不能带 body
+     - 发送一个消息需要携带 messages、会话 id 等字段，必须放在 body 里，因为消息内容可能很长（几千 token 的上下文），放 URL 里会超长，以及包含文件附件、结构化数据，URL 参数无法承载
+
 ### 多 Agent 设计考量
 
 [参考](https://www.anthropic.com/engineering/multi-agent-research-system)
@@ -53,6 +64,9 @@ Top N（一般比较小， 比如 5 ）词频问题以及代表性评论统计
 
 ## 共创问题
 
+- 时间戳转换日期错误
+  - 当处理时间戳（timestamp）或日期（date）字段时，务必使用日期字符串作为比较值
+  - **当处理时间戳（timestamp）列的查询时，请务必将用户意图通过 "UNIX_TIMESTAMP", "STR_TO_DATE" 等函数转化成时间戳再进行对比**
 - 查询sql列名未加 ``， count 关键字冲突
   - query-data查询sql原语句："SELECT`selectdd_ss1234e9d`, COUNT(\*) as count FROM `view-86kfbaphami4th9dt00p`GROUP BY`selectdd_ss1234e9d` ORDER BY count DESC"
     ![alt text](image-4.png)

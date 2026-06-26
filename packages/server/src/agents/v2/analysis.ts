@@ -1,16 +1,18 @@
-import { LanguageModelV1, TextStreamPart, streamText } from "ai";
-import { IAgent } from "../../types/agent.js";
-import { IRunContext } from "../../types/context.js";
-import { IExtendedTool } from "../../types/tool.js";
-import { BaseAgent } from "../base.js";
-import { IPlanningAgentOutput } from "./planning.js";
-import { getModel } from "../../lib/ai/model-provider.js";
-import { designQueryDslToolFactory } from "../../tools/v2/design-query.js";
-import { queryDataToolFactory } from "../../tools/v2/query-data.js";
+import { LanguageModelV1, TextStreamPart, streamText } from 'ai';
+import { IAgent } from '../../types/agent.js';
+import { IRunContext } from '../../types/context.js';
+import { IExtendedTool } from '../../types/tool.js';
+import { BaseAgent } from '../base.js';
+import { IPlanningAgentOutput } from './planning.js';
+import { getModel } from '../../lib/ai/model-provider.js';
+import { designQueryDslToolFactory } from '../../tools/v2/design-query.js';
+import { queryDataToolFactory } from '../../tools/v2/query-data.js';
+import { nlPythonAnalysisToolFactory } from '../../tools/nl-python-analysis.js';
+import { nlDataQueryToolFactory } from '../../tools/v2/nl-query-data.js';
 
 export interface IAnalysisAgentInput {
-  tasks: IPlanningAgentOutput["tasks"];
-  current_task: IPlanningAgentOutput["tasks"][number];
+  tasks: IPlanningAgentOutput['tasks'];
+  current_task: IPlanningAgentOutput['tasks'][number];
 }
 
 export type IAnalysisAgentOutput = string;
@@ -88,16 +90,20 @@ export class AnalysisAgent<TOOLS extends Record<string, IExtendedTool>>
     super({
       ctx,
     });
-    this.name = "analysis";
-    this.description = "";
+    this.name = 'analysis';
+    this.description = '';
     this.ctx = ctx;
-    this.model = getModel(process.env.DEFAULT_MODEL || "gpt-4.1");
+    this.model = getModel(process.env.DEFAULT_MODEL || 'gpt-4.1');
 
     const dslTool = designQueryDslToolFactory(ctx);
-    const queryTool = queryDataToolFactory(ctx);
+    // const queryTool = queryDataToolFactory(ctx);
+
+    const queryTool = nlDataQueryToolFactory(ctx);
+    const analysisTool = nlPythonAnalysisToolFactory(ctx);
     this.tools = {
-      [dslTool.name]: dslTool,
+      // [dslTool.name]: dslTool,
       [queryTool.name]: queryTool,
+      [analysisTool.name]: analysisTool,
     } as TOOLS;
   }
 
@@ -107,11 +113,19 @@ export class AnalysisAgent<TOOLS extends Record<string, IExtendedTool>>
     onComplete: (result: IAnalysisAgentOutput) => void;
     onFail: (error: Error) => void;
   }): Promise<Object> {
-    this.emit("log", {
-      intro: "analysis-start",
+    this.emit('log', {
+      intro: 'analysis-start',
       data: options.input,
     });
     const system = await this.instructions(this.ctx);
+    //     const prompt = `-----
+
+    // 当前目标**\`current_goal\`**：
+
+    // ${JSON.stringify(input.current_goal)}
+
+    // 请实现当前目标。
+    // `;
     const prompt = `-----
 
 当前任务**\`current_task\`**：
@@ -141,25 +155,20 @@ ${JSON.stringify(options.input.tasks)}
       },
       onFinish: (ret) => {
         options.onComplete(ret.text);
-        this.emit("log", {
-          intro: "analysis-end",
+        this.emit('log', {
+          intro: 'analysis-end',
           data: ret.text,
         });
       },
       onError: ({ error }) => {
-        options.onFail(
-          error instanceof Error ? error : new Error(error as string)
-        );
+        options.onFail(error instanceof Error ? error : new Error(error as string));
       },
     });
 
     return stream;
   }
 
-  onHandOff(
-    ctx: IRunContext & { toolCallId: string },
-    args: string
-  ): Promise<any> {
-    throw new Error("Method not supported.");
+  onHandOff(ctx: IRunContext & { toolCallId: string }, args: string): Promise<any> {
+    throw new Error('Method not supported.');
   }
 }
