@@ -9,6 +9,7 @@ import { QueryPlanningAgent } from './query-planning.js';
 import { QueryDesignAgent } from './query-design.js';
 import { HtmlReportGenerateAgent } from './report-generate.js';
 import EventEmitter from 'events';
+import { searchToolsServerFactory } from '../tools/mcp.js';
 
 // 6 - **主动确认：** 在关键步骤（如确定分析目标、执行复杂操作）前，主动总结你的理解并寻求用户确认，避免方向性错误。
 
@@ -137,6 +138,19 @@ ${JSON.stringify(tableInfo, null, 2)}
       // chartToolFactory 和 queryDataToolFactory tool
       ...toolSetFactory(this.ctx),
     } as TOOLS;
+
+    // 添加网页搜索工具
+    // if (this.ctx.searchWeb) {
+    //   try {
+    //     const bingSearchServer = await searchToolsServerFactory();
+    //     await bingSearchServer.init();
+    //     const searchTools = await bingSearchServer.tools();
+    //     Object.assign(tools, searchTools);
+    //     // this.disposers.push(() => bingSearchServer.close());
+    //   } catch (error) {
+    //     console.log(error);
+    //   }
+    // }
   }
 
   // 出勤天数超过 21 的记录条数
