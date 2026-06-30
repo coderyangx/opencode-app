@@ -1,17 +1,16 @@
 import type { IToolFactory } from '../types/tool.js';
 import { z } from 'zod';
 
+// Planning-Execute 范式（V2/V3）：先规划任务列表再执行，属于 Plan-and-Solve，是 CoT 思想在多 Agent 场景的延伸
+
+// sequential-thinking 工具：项目里有一个顺序思考工具，本质就是显式的 CoT
+
 const schema = z.object({
   thought: z.string().describe('Your current thinking step'),
-  nextThoughtNeeded: z
-    .boolean()
-    .describe('Whether another thought step is needed'),
+  nextThoughtNeeded: z.boolean().describe('Whether another thought step is needed'),
   thoughtNumber: z.number().min(1).describe('Current thought number'),
   totalThoughts: z.number().min(1).describe('Estimated total thoughts needed'),
-  isRevision: z
-    .boolean()
-    .describe('Whether this revises previous thinking')
-    .optional(),
+  isRevision: z.boolean().describe('Whether this revises previous thinking').optional(),
   revisesThought: z
     .number()
     // .min(1)
@@ -23,10 +22,7 @@ const schema = z.object({
     .describe('Branching point thought number')
     .optional(),
   branchId: z.string().describe('Branch identifier').optional(),
-  needsMoreThoughts: z
-    .boolean()
-    .describe('If more thoughts are needed')
-    .optional(),
+  needsMoreThoughts: z.boolean().describe('If more thoughts are needed').optional(),
 });
 
 type ThoughtData = z.infer<typeof schema>;

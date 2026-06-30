@@ -8,6 +8,10 @@ import { getSystemInfo } from '../agents/systemInfo.js';
 import { IToolFactory } from '../types/tool.js';
 import { getSharedMetadata } from '../agents/metadata.js';
 
+// ReAct 范式（nl-python-analysis 工具）：CoT 的进化版，将推理（Thought）
+// 和行动（Action）交替执行——Thought → Action → Observation → Thought → ...
+// 这是 Agent 范式的核心
+
 const Cat = {};
 const AICodeTemplate = `
 import requests
