@@ -67,6 +67,10 @@ Top N（一般比较小， 比如 5 ）词频问题以及代表性评论统计
 - 时间戳转换日期错误
   - 当处理时间戳（timestamp）或日期（date）字段时，务必使用日期字符串作为比较值
   - **当处理时间戳（timestamp）列的查询时，请务必将用户意图通过 "UNIX_TIMESTAMP", "STR_TO_DATE" 等函数转化成时间戳再进行对比**
+- 单轮会话：逻辑错误、无法理解月初在岗人数、
+  - query：统计下 9月初在岗人数、统计下 9月初 内催判定列为内催的流失率, 请按地区分组统计
+  - 意图：9月初在岗员工数量 = 9月1日之前入职且当前在职 或 (9月1日之前入职 在9月1日之后离职)
+  - 结果：生成的SQL查询不对：
 - 查询sql列名未加 ``， count 关键字冲突
   - query-data查询sql原语句："SELECT`selectdd_ss1234e9d`, COUNT(\*) as count FROM `view-86kfbaphami4th9dt00p`GROUP BY`selectdd_ss1234e9d` ORDER BY count DESC"
     ![alt text](image-4.png)

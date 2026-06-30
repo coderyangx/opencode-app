@@ -2,6 +2,7 @@ import { generateObject, LanguageModelV1, ToolSet } from 'ai';
 import { IAgent } from '../types/agent';
 import { IRunContext } from '../types/context';
 import { getModel } from '../lib/ai/model-provider.js';
+import { getTracer, getSharedMetadata } from '../lib/telemetry';
 import { IQueryTask, QueryTaskSchema } from '../types/query.js';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
@@ -108,6 +109,12 @@ ${JSON.stringify(tableInfo, null, 2)}
         // }),
       }),
       messages: this.ctx.history || [],
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'agent.query_planning',
+        tracer: getTracer(this.ctx),
+        metadata: getSharedMetadata(this.ctx),
+      },
     });
 
     if (result.object.tasks) {

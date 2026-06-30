@@ -1,4 +1,4 @@
-// /api/zeroconsole/view/showInfo/${ctx.view}` 返回结构
+// 项目信息管理_仿CLC /api/zeroconsole/view/showInfo/${ctx.view}` 返回结构
 export const data = {
   name: '项目信息管理_仿CLC',
   schema:
@@ -34,6 +34,7 @@ export const data = {
   submittedRecordId: null,
 };
 
+// 表单schema：获取控件 id、type、label(description)、选项 options(enum_values)
 export const schema = {
   schemaType: '积木低代码schema协议',
   pages: [
@@ -361,8 +362,8 @@ export const schema = {
   schemaVersion: '2.0.1',
 };
 
-// 对于 viewData.ts 中的例子，转换后的表结构大致为：
-const dataSourceAfterFormatter = {
+// 对于 viewData.ts 中的例子，转换后的表结构大致如下，就是 preset
+export const dataSourceAfterFormatter = {
   tables: [
     {
       name: 'view-xxx',

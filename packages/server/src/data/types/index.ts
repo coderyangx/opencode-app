@@ -1,8 +1,8 @@
-import { QUERY_CONFIG } from "../../lib/query/dsl-schema";
-import { IRunContext } from "../../types/context";
+import { QUERY_CONFIG } from '../../lib/query/dsl-schema';
+import { IRunContext } from '../../types/context';
 
 export interface IDataAnalysisPreset {
-  id: string;
+  id: string; // 租户id
   description?: string;
   // 额外的系统提示词
   prompt?: string;
@@ -30,10 +30,10 @@ export interface IColumnSchema {
   type: string;
   description: string;
   // 声明列的角色
-  role: "dimension" | "metric";
+  role: 'dimension' | 'metric';
 }
 
 export type IQueryExecutorFunction = (
-  dsl: QUERY_CONFIG["dsl_query"],
-  ctx: IRunContext
+  dsl: QUERY_CONFIG['dsl_query'],
+  ctx: IRunContext,
 ) => Promise<any>;

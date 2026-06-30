@@ -3,6 +3,7 @@ import type { IAgent } from '../types/agent.js';
 import type { IRunContext } from '../types/context.js';
 import { QUERY_CONFIG_SCHEMA } from '../lib/query/dsl-schema.js';
 import { getModel } from '../lib/ai/model-provider.js';
+import { getTracer, getSharedMetadata } from '../lib/telemetry';
 import { format } from 'date-fns';
 import { nanoid } from 'nanoid';
 import { BaseAgent } from './base.js';
@@ -271,10 +272,22 @@ ${JSON.stringify(tableInfo, null, 2)}
             },
           ]
         : this.ctx.history || [],
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'agent.query_design',
+        tracer: getTracer(this.ctx),
+        metadata: getSharedMetadata(this.ctx),
+      },
     });
 
     const queryId = nanoid(10);
     this.ctx.memory?.set(queryId, result1.object);
+    console.log(
+      '[query-design] stored DSL in memory, query_id:',
+      queryId,
+      'memory defined:',
+      !!this.ctx.memory,
+    );
 
     const sql = new DSLTranslator(result1.object.dsl_query, []).toSQL();
 

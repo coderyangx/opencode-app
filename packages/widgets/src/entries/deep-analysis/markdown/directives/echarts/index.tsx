@@ -40,10 +40,31 @@ export function EChartsDirective(props: any) {
   const [sources, setSources] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
+  const applyConfig = useCallback((config: { chartOptions?: any; queryIds?: string[] }) => {
+    setOptions(
+      merge(
+        {
+          title: {
+            textStyle: {
+              fontSize: 12,
+            },
+          },
+          xAxis: {
+            nameTextStyle: {
+              fontSize: 0,
+            },
+          },
+        },
+        config.chartOptions
+      )
+    );
+    setSources(config.queryIds || []);
+  }, []);
+
   const getOptions = useCallback(async (id: string) => {
     try {
       console.log("getOptions", id);
-      const resp = !id.endsWith('.json') ? await fetch(
+      const resp = !id.endsWith(".json") ? await fetch(
         `${API_BASE}/ai-agent/chart-options`,
         {
           headers: {},
@@ -56,34 +77,30 @@ export function EChartsDirective(props: any) {
 
       if (resp.ok) {
         const info = await resp.json();
-        console.log(typeof info);
-        setOptions(
-          merge(
-            {
-              title: {
-                textStyle: {
-                  fontSize: 12,
-                },
-              },
-              xAxis: {
-                nameTextStyle: {
-                  fontSize: 0,
-                },
-              },
-            },
-            info.chartOptions
-          )
-        );
-        setSources(info.queryIds || []);
+        if (info) {
+          applyConfig(info);
+        }
       }
     } catch {
       // ignore
     }
-  }, []);
+  }, [applyConfig]);
 
   useEffect(() => {
-    getOptions(props.id);
-  }, [props.id]);
+    // 优先从 directive 属性中直接解码配置，避免二次 fetch
+    if (props.config) {
+      try {
+        const decoded = JSON.parse(atob(props.config));
+        applyConfig(decoded);
+        return;
+      } catch {
+        // 解码失败，回退到 fetch
+      }
+    }
+    if (props.id) {
+      getOptions(props.id);
+    }
+  }, [props.config, props.id, getOptions, applyConfig]);
 
   useEffect(() => {
     if (!options) {

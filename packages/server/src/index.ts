@@ -13,9 +13,14 @@ import { SQLPreview } from './handlers/sql.js';
 import { initConfig } from './config/index.js';
 import { ChartOptions } from './handlers/chart-options.js';
 import { Recommendations } from './handlers/recommendations.js';
+import { ChatHistory, ClearChatHistory } from './handlers/chat-history.js';
 import { S3Upload } from './handlers/upload.js';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { DeepAnalysisChat } from './handlers/ws/deep-analysis-chat.js';
+import { initTelemetry } from './lib/telemetry/index.js';
+
+// 初始化 Langfuse OpenTelemetry 遥测（需在其他模块加载前调用）
+initTelemetry();
 
 // Global error handlers to prevent server crashes
 process.on('unhandledRejection', (reason, promise) => {
@@ -72,6 +77,8 @@ app.get('/ai-agent/object/:key', S3Preview);
 app.post('/ai-agent/attachments/upload', S3Upload);
 app.post('/ai-agent/query/preview', SQLPreview);
 app.post('/ai-agent/recommendations', Recommendations);
+app.get('/ai-agent/chat/history', ChatHistory);
+app.delete('/ai-agent/chat/history', ClearChatHistory);
 
 app.get('/ai-agent/chat/app', async (c) => {
   logger.info('ws chat');

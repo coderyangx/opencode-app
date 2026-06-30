@@ -173,7 +173,7 @@ const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
     results = {
       name: ctx.view, // view
       description: name, // "项目信息管理_仿CLC"
-      columns: showFields // 列信息：
+      columns: showFields // 列信息：转换成name、description、type、role结构
         .map((item) => fields.find((field) => field.name === item))
         .filter(Boolean),
     };
@@ -187,7 +187,6 @@ const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
 };
 
 // ---
-
 export const kuaidaPreset: IDataAnalysisPreset = {
   id: 'kuaida',
   description: '快搭表单数据列表',

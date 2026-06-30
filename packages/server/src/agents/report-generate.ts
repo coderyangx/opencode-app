@@ -1,6 +1,7 @@
 import { type LanguageModelV1, Message, type ToolSet, generateObject } from 'ai';
 import type { IRunContext } from '../types/context.js';
 import { getModel } from '../lib/ai/model-provider.js';
+import { getTracer, getSharedMetadata } from '../lib/telemetry';
 import { nanoid } from 'nanoid';
 import { BaseAgent } from './base.js';
 import { FORM_API_SERVER_MAP } from '../const/index.js';
@@ -215,6 +216,12 @@ export class HtmlReportGenerateAgent extends BaseAgent {
       schema: z.object({
         html: z.string().describe('生成的 HTML 文件源码'),
       }),
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'agent.html_report_generate',
+        tracer: getTracer(this.ctx),
+        metadata: getSharedMetadata(this.ctx),
+      },
     });
 
     console.log('text', html);

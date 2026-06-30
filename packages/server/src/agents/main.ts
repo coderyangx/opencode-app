@@ -1,9 +1,16 @@
-import { type LanguageModelV1, type ToolChoice, type StreamTextResult, streamText } from 'ai';
+import {
+  type LanguageModelV1,
+  type ToolChoice,
+  type StreamTextResult,
+  streamText,
+  TelemetrySettings,
+} from 'ai';
 import type { IAgent } from '../types/agent.js';
 import type { IRunContext } from '../types/context.js';
 import { toolSetFactory } from '../tools/index.js';
 import { format } from 'date-fns';
 import { getModel } from '../lib/ai/model-provider.js';
+import { getTracer, getSharedMetadata } from '../lib/telemetry';
 import { IExtendedTool } from '../types/tool.js';
 import { QueryPlanningAgent } from './query-planning.js';
 import { QueryDesignAgent } from './query-design.js';
@@ -166,7 +173,8 @@ ${JSON.stringify(tableInfo, null, 2)}
       model: this.model,
       messages,
       system,
-      maxSteps: 1,
+      maxSteps: 10,
+      // maxSteps: 1,
       temperature: 0.3,
       toolCallStreaming: true,
       tools: this.tools,
@@ -175,6 +183,13 @@ ${JSON.stringify(tableInfo, null, 2)}
           parallelToolCalls: false,
         },
       },
+      // ai-sdk 传入tracer
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'agent.data_analysis',
+        tracer: getTracer(this.ctx),
+        metadata: getSharedMetadata(this.ctx),
+      } as TelemetrySettings,
       onError: ({ error }) => {
         console.error('[MainAgent] streamText error:', error);
       },

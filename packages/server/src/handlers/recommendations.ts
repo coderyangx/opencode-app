@@ -1,26 +1,28 @@
-import { generateObject } from "ai";
-import type { Handler } from "hono";
-import { getModel } from "../lib/ai/model-provider.js";
-import { z } from "zod";
-import { NL2SQLDataService } from "../data/service.js";
+import { generateObject } from 'ai';
+import type { Handler } from 'hono';
+import { getModel } from '../lib/ai/model-provider.js';
+import { z } from 'zod';
+import { NL2SQLDataService } from '../data/service.js';
 
 export const Recommendations: Handler = async (c) => {
-  const view = c.req.header("X-FORM-VIEW") || "";
-  const env = c.req.header("X-ENV") || "";
+  const view = c.req.header('X-FORM-VIEW') || '';
+  const env = c.req.header('X-ENV') || '';
 
   const dataSvc = new NL2SQLDataService({
     view,
     env,
-    cookie: c.req.header("Cookie"),
-    origin: c.req.header("Origin") || "",
-    presetId: c.req.header("X-DATA-PRESET") || "mock",
+    cookie: c.req.header('Cookie'),
+    origin: c.req.header('Origin') || '',
+    presetId: c.req.header('X-DATA-PRESET') || 'kuaida-mock' || 'mock',
   });
 
   try {
     const formInfo = await dataSvc.getDataSchema();
 
+    console.log('[recommendations] formInfo:', formInfo);
+
     const { object } = await generateObject({
-      model: getModel(process.env.DEFAULT_MODEL || "gpt-4.1"),
+      model: getModel(process.env.DEFAULT_MODEL || 'gpt-4.1'),
       temperature: 0.5,
       schema: z.object({
         questions: z.array(z.string()),
@@ -33,7 +35,8 @@ ${JSON.stringify(formInfo)}
     });
 
     return c.json(object?.questions || []);
-  } catch {
+  } catch (err) {
+    console.error('[recommendations] error:', err);
     return c.json([]);
   }
 };

@@ -1,10 +1,5 @@
 import { IRunContext } from '../../../types/context';
-import {
-  IColumnSchema,
-  IDataAnalysisPreset,
-  IDatabaseSchema,
-  ITableSchema,
-} from '../../types';
+import { IColumnSchema, IDataAnalysisPreset, IDatabaseSchema, ITableSchema } from '../../types';
 
 // --- Mock 数据：模拟一份销售订单数据，用于本地开发和无 Cookie 场景 ---
 
@@ -55,7 +50,7 @@ const SALES_COLUMNS: IColumnSchema[] = [
 
 const CATEGORIES = ['电子产品', '服装', '食品', '家居', '图书'];
 const REGIONS = ['华北', '华东', '华南', '西南', '西北'];
-const SALESPEOPLE = ['张三', '李四', '王五', '赵六', '钱七'];
+const SALESPEOPLE = ['张三', '李四', '王五', '赵六', '钱七', '王二麻子', '李飞机', '姜老五'];
 
 // 生成 200 条模拟销售记录
 const generateMockData = () => {
@@ -97,12 +92,13 @@ export const getMockData = () => {
 
 const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
   const data = getMockData();
+  console.log('mock的数据', ctx);
 
   const table: ITableSchema = {
     name: 'sales_orders',
     description: '销售订单表，包含商品分类、地区、销售员、数量和金额等信息',
     columns: SALES_COLUMNS,
-    data_samples: data.slice(0, 5),
+    data_samples: data.slice(0, 7),
   };
 
   return { tables: [table] };

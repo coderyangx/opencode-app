@@ -1,19 +1,14 @@
-import { s3 } from "../../../lib/memory-s3/index.js";
-import { IRunContext } from "../../../types/context";
-import {
-  IDataAnalysisPreset,
-  IDatabaseSchema,
-  ITableSchema,
-  IColumnSchema,
-} from "../../types";
-import XLSX from "xlsx";
+import { s3 } from '../../../lib/memory-s3/index.js';
+import { IRunContext } from '../../../types/context';
+import { IDataAnalysisPreset, IDatabaseSchema, ITableSchema, IColumnSchema } from '../../types';
+import XLSX from 'xlsx';
 
 const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
   const file = s3.getObject(ctx.presetOptions.fileKey);
   const content = file.data; // excel file buffer
 
   // 解析Excel文件
-  const workbook = XLSX.read(content, { type: "buffer" });
+  const workbook = XLSX.read(content, { type: 'buffer' });
   const tables: ITableSchema[] = [];
 
   // 遍历每个sheet
@@ -34,9 +29,9 @@ const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
     const columns: IColumnSchema[] = headerRow.map((header, i) => ({
       name: `${header}${i + 1}`,
       // 简单类型推断，可以根据实际需求扩展
-      type: "string",
+      type: 'string',
       description: `${header}${i + 1}列`,
-      role: "dimension", // 默认为维度
+      role: 'dimension', // 默认为维度
     }));
 
     // 转换数据行
@@ -47,8 +42,7 @@ const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
 
       const rowData: Record<string, any> = {};
       headerRow.forEach((header, index) => {
-        rowData[`${header}${index + 1}`] =
-          index < row.length ? row[index] : null;
+        rowData[`${header}${index + 1}`] = index < row.length ? row[index] : null;
       });
 
       rows.push(rowData);
@@ -68,9 +62,9 @@ const getDataSchema = async (ctx: IRunContext): Promise<IDatabaseSchema> => {
 };
 
 export const filePreset: IDataAnalysisPreset = {
-  id: "excel",
-  description: "Excel/CSV文件数据分析",
-  prompt: "",
+  id: 'excel',
+  description: 'Excel/CSV文件数据分析',
+  prompt: '',
   database_schema: getDataSchema,
-  query_executor: "excel",
+  query_executor: 'excel',
 };

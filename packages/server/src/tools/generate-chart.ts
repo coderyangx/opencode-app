@@ -91,15 +91,13 @@ export const chartToolFactory: IToolFactory = (c) => {
           )
           .describe('The data series of yAxis'),
       }),
-      queryIds: z
-        .array(z.string())
-        .describe('可视化图表的数据查询使用的 query_id 列表'),
+      queryIds: z.array(z.string()).describe('可视化图表的数据查询使用的 query_id 列表'),
     }),
     async execute(args, options) {
       try {
         console.log('echarts args', JSON.stringify(args, null, 2));
         const url = await generateChartSVG(args.chartOptions, c);
-        console.log(url);
+        console.log('生成图表SVG', url);
 
         const configId = nanoid(6);
         c.memory?.set(configId, JSON.stringify(args));
@@ -118,7 +116,7 @@ ${JSON.stringify({
             },
             {
               type: 'text',
-              content: `可交互图表为:
+              text: `可交互图表为:
 :::echarts{id=${configId}}
 :::
 `,
