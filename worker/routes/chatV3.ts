@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import {
   ToolLoopAgent,
-  createAgentUIStreamResponse,
+  createAgentUIStream,
+  createUIMessageStreamResponse,
   generateId,
   isLoopFinished,
   stepCountIs,
@@ -23,11 +24,210 @@ import {
 } from '../lib/chat-store';
 import { createSupabaseAdmin } from '../lib/supabase';
 import { buildSystemPrompt } from '../lib/system-prompt';
+import {
+  registerStream,
+  registerAbortController,
+  consumeStreamForResume,
+  createResumeResponse,
+  handleStop,
+  cleanupStream
+} from '../lib/stream-cache';
 import { NotFoundError } from '../util/errors';
 import { logger } from '../util/logger';
 import type { Env, Variables } from '../index';
 
 const chat = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// ── GET /:id/stream  AI SDK resume 端点 ────────────────────────────────────
+// 前端组件挂载时（resume: true）SDK 自动发 GET 请求尝试恢复正在进行的流
+// - 有进行中的流 → 200 + SSE（回放已缓存 chunks + 实时推送新 chunks）
+// - 无进行中的流 → 204（客户端静默跳过，走正常历史加载）
+chat.get('/:id/stream', (c) => {
+  return createResumeResponse(c.req.param('id'));
+});
+
+// ── GET /:id/stop  前端 stop() 时额外调用，通知后端手动 abort ──────────────
+// CF Workers 的 request.signal 不随客户端断开而触发，必须主动发请求让后端 abort
+chat.get('/:id/stop', (c) => {
+  handleStop(c.req.param('id'));
+  return c.json({ ok: true });
+});
+
+// ── POST /  发送消息，启动流式生成 ──────────────────────────────────────────
+chat.post('/', async (c) => {
+  const user = c.get('user');
+  const { messages, id, isResume } = await c.req.json();
+
+  console.log('[server] chat回复', id, isResume, 'cache');
+  // 如果前端传了 isResume，且在缓存中找到了上一条未吐完的流
+  // if (isResume && streamCache.has(id)) {
+  //   const savedState = streamCache.get(id);
+  // 从断点位置继续返回
+  // AI SDK 内部通过 control tokens 配合前端的 experimental_resume()
+  // 在标准协议下，前端只需拿到正常的 stream 响应，前端的 useChat 就会自动做追加拼装
+  // }
+
+  const incomingMessages: UIMessage[] = Array.isArray(messages) ? messages : [];
+  // 防御：过滤空壳消息（parts 为空），避免 SDK schema 校验失败导致整个请求 400
+  const safeIncoming = sanitizeUIMessages(incomingMessages);
+  const lastUserMsg = [...safeIncoming].reverse().find((m) => m.role === 'user');
+  if (!lastUserMsg) throw new Error('no user message');
+
+  // 1. 验证 conversation 归属
+  const supabase = createSupabaseAdmin(c.env);
+  const { data: conv } = await supabase
+    .from('conversations')
+    .select('id, model')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+  if (!conv) throw new NotFoundError('conversation not found');
+
+  // 2. 立即持久化 user 消息
+  await saveUserMessage(c.env, id, lastUserMsg);
+
+  // 3. 加载历史
+  const history = await loadChat(c.env, id);
+  const isFirstTurn = history.length === 0;
+
+  // 4. 创建 Supervisor Agent（带多 Agent 委派 + HITL 工具）
+  const supervisorTools = createSupervisorTools(c.env);
+  const agent = new ToolLoopAgent({
+    model: getModel(c.env, conv.model),
+    instructions: `${buildSystemPrompt()}
+
+## 多 Agent 协作
+你是一个 Supervisor 助手，可以自主处理简单问题，也可以委派任务给专业子助手：
+- delegate_to_research：委派给研究助手（搜索互联网、查找资料）
+- delegate_to_analysis：委派给数据分析助手（查询天气、数据分析）
+委派后，子助手会独立完成任务并返回结果，你需要整合结果给用户。
+
+## 危险操作审批
+发邮件等不可逆操作需要用户确认：
+- 调用 send_email 时，系统会暂停等待用户审批
+- 用户拒绝后，告知用户操作已取消`,
+    tools: supervisorTools,
+    stopWhen: [stepCountIs(30), isLoopFinished()],
+    experimental_context: {
+      userInfo: { role: user.role, email: user.email },
+      env: c.env,
+      traceId: id
+    },
+    prepareStep: async (opts) => {
+      // if (opts.model)
+      // console.log('prepareStep', opts);
+      return undefined;
+      // return { toolCallApproval: 'always' }; // 暂停等审批
+    },
+    maxOutputTokens: 100_000
+  });
+
+  let assistantMsgId: string | null = null;
+
+  // 5. 创建 AbortController（CF Workers 的 request.signal 不随客户端断开触发）
+  const abortController = registerAbortController(id);
+
+  // 6. 外部 Promise 桥接：onFinish 持久化完成后 resolve，waitUntil 等它
+  // CF Workers 在 HTTP 响应结束后会 kill 进程，必须通过 waitUntil 告知 runtime
+  // "这个 Promise 完成之前不要 kill"
+  let persistResolve!: () => void;
+  let persistReject!: (e: unknown) => void;
+  const persistPromise = new Promise<void>((res, rej) => {
+    persistResolve = res;
+    persistReject = rej;
+  });
+
+  // 7. 创建 Agent UI Stream（不用 createAgentUIStreamResponse，因为需要 tee 做断线续传）
+  // HITL 关键：前端配置了 sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses
+  //   → 当消息末尾有 approval-request 且都已响应时，SDK 自动重发请求继续流
+  // 后端会收到带 approval-responded 的 messages，SDK 据此决定是否 execute
+  const uiStream = await createAgentUIStream({
+    agent,
+    uiMessages: safeIncoming,
+    originalMessages: history as any,
+    generateMessageId: generateId,
+    abortSignal: abortController.signal,
+    onFinish: async (opts) => {
+      const { responseMessage, isAborted, isContinuation } = opts;
+      logger.info('[v3] onFinish', {
+        msgId: responseMessage?.id,
+        isContinuation,
+        isAborted,
+        responseMessage
+      });
+      try {
+        if (responseMessage) {
+          assistantMsgId = responseMessage.id;
+          const oldAssistantMsg = isContinuation ? history[history.length - 1] : null;
+
+          // 区分 HITL 续传 vs regenerate，决定是否 slice 旧 parts：
+          //
+          // SDK 的 responseMessage 包含「旧 parts（从 originalMessages 克隆）+ 新 parts」。
+          // - regenerate：客户端移除了旧 assistant 消息，最后一条 incoming 是 user。
+          //   旧 text parts 被原样保留在 clone 中（未更新），新 text parts 被 append。
+          //   → 需要 slice 掉旧 parts，否则旧文本会重复。
+          //
+          // - HITL 续传：客户端保留了旧 assistant 消息（带 approval-responded），最后一条
+          //   incoming 是 assistant。旧 tool part 被 SDK 原地更新（approval-requested →
+          //   output-available），新 text parts 被 append。
+          //   → 不能 slice，否则更新后的 tool part 会被切掉，刷新后只剩文本。
+          const lastIncoming = safeIncoming[safeIncoming.length - 1];
+          const isHITLContinuation = isContinuation && lastIncoming?.role === 'assistant';
+
+          const rawParts =
+            isContinuation && !isHITLContinuation && oldAssistantMsg
+              ? responseMessage.parts.slice(oldAssistantMsg.parts.length)
+              : responseMessage.parts;
+          const parsedMsg = parseThinkingParts({ ...responseMessage, parts: rawParts });
+
+          if (isAborted) {
+            await saveAssistantMessage(c.env, id, parsedMsg, isContinuation);
+            await markMessageStatus(c.env, assistantMsgId, 'interrupted');
+          } else {
+            await saveAssistantMessage(c.env, id, parsedMsg, isContinuation);
+          }
+        }
+        if (isFirstTurn && !isAborted) {
+          const firstText = (lastUserMsg.parts?.[0] as { text?: string })?.text ?? '';
+          generateTitle(c.env, id, firstText);
+        }
+        persistResolve();
+      } catch (error) {
+        logger.error('[v3] onFinish', error);
+        persistReject(error);
+      } finally {
+        cleanupStream(id);
+      }
+    },
+    onError: (err: string) => {
+      if (assistantMsgId) {
+        markMessageStatus(c.env, assistantMsgId, 'error').catch((e) => {
+          logger.error('[v3] onError', e);
+        });
+      }
+      persistResolve();
+      cleanupStream(id);
+      return err as string;
+    }
+  });
+
+  // 8. tee：将 UIMessageChunk 流一分为二
+  //   - stream1：给本次 POST 请求前端（正常流式输出）
+  //   - stream2：后台立即消费，缓存到 ActiveStream 供 resume 端点回放
+  //
+  // 必须后台消费 stream2，否则 tee() 背压会阻塞 stream1！
+  const [stream1, stream2] = uiStream.tee();
+
+  // 立即注册 ActiveStream，供 GET /:id/stream 随时查询
+  const active = registerStream(id);
+
+  // 后台消费 stream2：放在 waitUntil 中，防止 CF Workers kill 进程
+  const ctx = c.executionCtx as { waitUntil?: (p: Promise<unknown>) => void } | undefined;
+  ctx?.waitUntil(Promise.all([consumeStreamForResume(id, active, stream2), persistPromise]));
+
+  // stream1 给本次请求前端
+  return createUIMessageStreamResponse({ stream: stream1 });
+});
 
 // ════════════════════════════════════════════════════════════════════════════
 // 架构总览：多 Agent 协作（Supervisor 模式）+ HITL
@@ -181,136 +381,6 @@ function createSupervisorTools(env: Env) {
     web_search: baseTools.web_search
   };
 }
-
-// ── POST / 发送消息 ────────────────────────────────────────────────────────
-chat.post('/', async (c) => {
-  const user = c.get('user');
-  const { messages, id } = await c.req.json();
-
-  const incomingMessages: UIMessage[] = Array.isArray(messages) ? messages : [];
-  // 防御：过滤空壳消息（parts 为空），避免 SDK schema 校验失败导致整个请求 400
-  const safeIncoming = sanitizeUIMessages(incomingMessages);
-  const lastUserMsg = [...safeIncoming].reverse().find((m) => m.role === 'user');
-  if (!lastUserMsg) throw new Error('no user message');
-
-  // 1. 验证 conversation 归属
-  const supabase = createSupabaseAdmin(c.env);
-  const { data: conv } = await supabase
-    .from('conversations')
-    .select('id, model')
-    .eq('id', id)
-    .eq('user_id', user.id)
-    .single();
-  if (!conv) throw new NotFoundError('conversation not found');
-
-  // 2. 立即持久化 user 消息
-  await saveUserMessage(c.env, id, lastUserMsg);
-
-  // 3. 加载历史
-  const history = await loadChat(c.env, id);
-  const isFirstTurn = history.length === 0;
-
-  // 4. 创建 Supervisor Agent（带多 Agent 委派 + HITL 工具）
-  const supervisorTools = createSupervisorTools(c.env);
-  const agent = new ToolLoopAgent({
-    model: getModel(c.env, conv.model),
-    instructions: `${buildSystemPrompt()}
-
-## 多 Agent 协作
-你是一个 Supervisor 助手，可以自主处理简单问题，也可以委派任务给专业子助手：
-- delegate_to_research：委派给研究助手（搜索互联网、查找资料）
-- delegate_to_analysis：委派给数据分析助手（查询天气、数据分析）
-委派后，子助手会独立完成任务并返回结果，你需要整合结果给用户。
-
-## 危险操作审批
-发邮件等不可逆操作需要用户确认：
-- 调用 send_email 时，系统会暂停等待用户审批
-- 用户拒绝后，告知用户操作已取消`,
-    tools: supervisorTools,
-    stopWhen: [stepCountIs(30), isLoopFinished()],
-    experimental_context: {
-      userInfo: { role: user.role, email: user.email },
-      env: c.env,
-      traceId: id
-    },
-    prepareStep: async (opts) => {
-      // if (opts.model)
-      console.log('prepareStep', opts);
-      return undefined;
-      // return { toolCallApproval: 'always' }; // 暂停等审批
-    },
-    maxOutputTokens: 100_000
-  });
-
-  let assistantMsgId: string | null = null;
-
-  // 5. 流式执行
-  // HITL 关键：前端配置了 sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses
-  //   → 当消息末尾有 approval-request 且都已响应时，SDK 自动重发请求继续流
-  // 后端会收到带 approval-responded 的 messages，SDK 据此决定是否 execute
-  return createAgentUIStreamResponse({
-    agent,
-    uiMessages: safeIncoming,
-    originalMessages: history as any, //await convertToModelMessages(),
-    generateMessageId: generateId,
-    abortSignal: c.req.raw.signal,
-    onFinish: async (opts) => {
-      const { responseMessage, isAborted, isContinuation } = opts;
-      logger.info('[v3] onFinish', {
-        msgId: responseMessage?.id,
-        isContinuation,
-        isAborted
-      });
-      try {
-        if (responseMessage) {
-          assistantMsgId = responseMessage.id;
-          const oldAssistantMsg = isContinuation ? history[history.length - 1] : null;
-
-          // 区分 HITL 续传 vs regenerate，决定是否 slice 旧 parts：
-          //
-          // SDK 的 responseMessage 包含「旧 parts（从 originalMessages 克隆）+ 新 parts」。
-          // - regenerate：客户端移除了旧 assistant 消息，最后一条 incoming 是 user。
-          //   旧 text parts 被原样保留在 clone 中（未更新），新 text parts 被 append。
-          //   → 需要 slice 掉旧 parts，否则旧文本会重复。
-          //
-          // - HITL 续传：客户端保留了旧 assistant 消息（带 approval-responded），最后一条
-          //   incoming 是 assistant。旧 tool part 被 SDK 原地更新（approval-requested →
-          //   output-available），新 text parts 被 append。
-          //   → 不能 slice，否则更新后的 tool part 会被切掉，刷新后只剩文本。
-          const lastIncoming = safeIncoming[safeIncoming.length - 1];
-          const isHITLContinuation = isContinuation && lastIncoming?.role === 'assistant';
-
-          const rawParts =
-            isContinuation && !isHITLContinuation && oldAssistantMsg
-              ? responseMessage.parts.slice(oldAssistantMsg.parts.length)
-              : responseMessage.parts;
-          const parsedMsg = parseThinkingParts({ ...responseMessage, parts: rawParts });
-
-          if (isAborted) {
-            await saveAssistantMessage(c.env, id, parsedMsg, isContinuation);
-            await markMessageStatus(c.env, assistantMsgId, 'interrupted');
-          } else {
-            await saveAssistantMessage(c.env, id, parsedMsg, isContinuation);
-          }
-        }
-        if (isFirstTurn && !isAborted) {
-          const firstText = (lastUserMsg.parts?.[0] as { text?: string })?.text ?? '';
-          generateTitle(c.env, id, firstText);
-        }
-      } catch (error) {
-        logger.error('[v3] onFinish', error);
-      }
-    },
-    onError: (err: string) => {
-      if (assistantMsgId) {
-        markMessageStatus(c.env, assistantMsgId, 'error').catch((e) => {
-          logger.error('[v3] onError', e);
-        });
-      }
-      return err as string;
-    }
-  });
-});
 
 /**
  * 解析 <thinking>...</thinking> 标签，拆分为 reasoning + text parts

@@ -135,3 +135,131 @@ hash 路由 VS history 路由，参考 [pages/ReactStudy/Router.tsx]('../src/pag
 ### 为什么 file 输入框不能受控？
 
 因为⽂件是⽤户本地隐私数据，React 不能通过 state 赋值 value 控制，只能由⽤户⼿动选择，所以天⽣⾮受控
+
+### React 奇技淫巧
+
+```ts
+// 1.使用 ref 回调函数初始化 ref，避免使用 useEffect
+const FocusInput = () => {
+  const ref = useCallback((node) => node?.focus(), []);
+  return <input ref={ref} type="text" />;
+};
+// 2.可取消的接口请求
+const createCancelTask = (asyncTask) => {
+   let cancel = () => {};
+   return (...args) => {
+      return new Promise((resolve, reject) => {
+         cancel();
+         cancel = () => {
+            resolve = reject = () => {};
+         };
+
+         asyncTask(...args)
+            .then(resolve)
+            .catch(reject);
+      });
+   };
+};
+
+// const createTask = (name, delay) => () => {
+//   console.log(`${name} 开始执行`);
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       console.log(`${name} 执行完成`);
+//       resolve(`${name} 的结果`);
+//     }, delay);
+//   });
+// };
+// const cancelableTask = this.createCancelTask(createTask);
+// cancelableTask('任务1', 2000).then((res) => console.log('收到结果:', res));
+
+// setTimeout(() => {
+//   const cancelableTask2 = this.createCancelTask(createTask);
+//   cancelableTask2('任务2', 1000).then((res) =>
+//     console.log('收到结果:', res)
+//   );
+// }, 800);
+
+// 3.检测是否有modal弹窗，detectMaskShow，负责嵌套iframe的通信
+/**
+ * iframe模式下向父级发送消息
+ * @param type
+ * @param message
+ */
+export const postMessage = (type, message, isToTop?: boolean) => {
+  if (window.parent === window) {
+    return;
+  }
+  if (isToTop) {
+    window.top.postMessage(
+      JSON.stringify({
+        channel: 'FRAME_APP',
+        type,
+        data: message
+      }),
+      deployEnv === 'development' ? '*' : undefined
+    );
+    return;
+  }
+  window.parent.postMessage(
+    JSON.stringify({
+      channel: 'FRAME_APP',
+      type,
+      data: message
+    }),
+    deployEnv === 'development' ? '*' : undefined
+  );
+};
+
+/**
+ * 检测是否有modal弹窗，通知iframe的父级隐藏弹窗的关闭按钮
+ * @returns
+ */
+export const detectMaskShow = () => {
+  const targetNode = document.body;
+  const config = { childList: true, subtree: true };
+
+  const callback = function (mutationsList) {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList') {
+        if (mutation.addedNodes) {
+          const hasModal = Array.from(mutation.addedNodes).some((item: any) =>
+            item.classList?.contains('mtd-modal-wrapper')
+          );
+          if (hasModal) {
+            // 当iframe内部还存在modal框，modal的mask的背景色需要变浅
+            const modal = Array.from(mutation.addedNodes).find((item: any) =>
+              item.classList?.contains('mtd-modal-wrapper')
+            );
+            // console.log('--modal', modal, modal.childNodes)
+            let mask;
+            for (const node of modal.childNodes) {
+              if (node.classList?.contains('mtd-modal-mask')) {
+                mask = node;
+              }
+              break;
+            }
+            mask.style.background = 'rgba(0, 0, 0, 0.2)';
+            postMessage('HIDE_MODAL_CLOSE', '');
+            break;
+          }
+        }
+        if (mutation.removedNodes) {
+          const hasModal = Array.from(mutation.removedNodes).some((item: any) =>
+            item.classList?.contains('mtd-modal-wrapper')
+          );
+          if (hasModal) {
+            postMessage('SHOW_MODAL_CLOSE', '');
+            break;
+          }
+        }
+      }
+    }
+  };
+  const observer = new MutationObserver(callback);
+  observer.observe(targetNode, config);
+  return () => {
+    observer.disconnect();
+  };
+};
+```

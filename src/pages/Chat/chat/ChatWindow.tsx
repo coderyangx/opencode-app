@@ -50,12 +50,14 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
     regenerate,
     addToolApprovalResponse,
     addToolOutput, // 用于前端增加工具调用结果（用于 服务端 tool 没有 execute 的场景）
-    status
+    status,
+    resumeStream
   } = useChat({
     id: conversation.id ?? undefined,
     // 历史加载完成后设置，historyStatus === 'loading' 时 initialMessages 是空数组，不影响
     messages: initialMessages ?? [],
-    // TODO 流恢复  Enable automatic stream resumption
+    // TODO 流恢复  开启断点续传支持  Enable automatic stream resumption
+    // 可以让前端向后端发起恢复请求，从流中断的位置继续接收剩余内容，而不是从头生成
     resume: true,
     transport: new DefaultChatTransport({
       api: '/api/chatV3',
@@ -64,13 +66,16 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
       // TODO 随着聊天记录变长，每次请求都把所有历史记录从客户端发给服务端会浪费带宽。
       // 我们可以优化为：客户端只发新消息，服务端负责拼接历史记录
       // 服务端：处理时先加载历史messages，再拼接新消息
-      prepareSendMessagesRequest: ({ messages, id }) => ({ body: { messages, id } }),
-      // resume 机制：组件挂载时 SDK 自动发 GET 请求尝试恢复正在进行的流
-      // 默认端点是 /api/chat/:id/stream，需要携带鉴权 header
-      prepareReconnectToStreamRequest: ({ id }) => ({
-        api: `/api/chat/${id}/stream`,
-        headers: getAuthHeaders()
+      prepareSendMessagesRequest: ({ messages, id, trigger, messageId }) => ({
+        body: { messages, id, trigger, messageId }
       })
+      // resume 机制：组件挂载时 SDK 自动发 GET 请求尝试恢复正在进行的流
+      // resume: true 会让 useChat 在 mount 时自动调用 resumeStream()，
+      // SDK 通过此端点发 GET 请求，后端有活跃流则回放缓存 chunks，无则返回 204
+      // prepareReconnectToStreamRequest: ({ id }) => ({
+      //   api: `/api/chatV3/${id}/stream`,
+      //   headers: getAuthHeaders()
+      // })
     }),
     // TODO HITL 关键配置
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
@@ -98,6 +103,15 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
 
   const isStreaming = status === 'streaming' || status === 'submitted';
 
+  const handleRegenerate = (index) => {
+    const isLastMessage = index === messages.length - 1;
+    // 只有在 ready 或 error 状态下才能重新生成
+    if (isLastMessage && !isStreaming && (status === 'ready' || status === 'error')) {
+      resetAbort();
+      regenerate();
+    }
+  };
+
   // 封装 stop：先通知后端 abort，再断开前端 SSE 读取
   // 原因：CF Workers 的 request.signal 不随客户端断开而触发，
   // 必须主动发 DELETE 请求让后端手动 abort AbortController
@@ -106,12 +120,18 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
     // fire-and-forget，不阻塞前端 UI 响应
     // 通知后端手动 abort：CF Workers 的 request.signal 不随客户端断开而触发，
     // 必须主动发请求让后端 abortController.abort()
-    fetch(`/api/chat/${conversation.id}/stop`, {
+    fetch(`/api/chatV3/${conversation.id}/stop`, {
       headers: getAuthHeaders()
     }).catch(() => {
       /* 网络问题忽略，后端流最终会自然结束 */
     });
   }, [conversation.id, stop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // resume 由 useChat 的 resume: true 自动触发：
+  // 组件 mount 时 SDK 自动调用 resumeStream()，发 GET /:id/stream 请求
+  // 后端有活跃流 → 回放缓存 chunks + 实时推送，前端自动拼接
+  // 后端无活跃流 → 返回 204，前端静默跳过，走正常历史加载
+  // 无需在此 useEffect 中手动调用 resumeStream()
 
   useEffect(() => {
     // 切换会话时先终止当前流，防止旧会话的流继续写入
@@ -175,7 +195,7 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
   // 消息更新时自动滚底（用户主动上滚后暂停）
   useEffect(() => {
     if (isUserScrolledRef.current) return;
-    bottomRef.current?.scrollIntoView({ behavior: messages.length <= 2 ? 'instant' : 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: messages.length <= 5 ? 'instant' : 'smooth' });
   }, [messages]);
 
   // 发送消息 / 重新生成前重置 abort 标记，防止旧状态污染新回复
@@ -236,14 +256,7 @@ export default function ChatWindow({ conversation, onTitleRefresh }: Props) {
                 isStreaming={isStreaming && i === messages.length - 1}
                 // HITL：把审批回调传下去，供 ToolInvocationPart 调用
                 onToolApproval={addToolApprovalResponse}
-                onRegenerate={
-                  i === messages.length - 1 && !isStreaming
-                    ? () => {
-                        resetAbort();
-                        regenerate();
-                      }
-                    : undefined
-                }
+                onRegenerate={() => handleRegenerate(i)}
               />
             ))}
             {/* TODO AI 回复时的跳跃 loading */}
