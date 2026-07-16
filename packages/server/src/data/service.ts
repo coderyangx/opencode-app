@@ -27,6 +27,7 @@ export class NL2SQLDataService {
     return preset.database_schema(this.ctx);
   }
 
+  // TODO SQL 执行查询
   async executeQuery(dsl: QUERY_CONFIG["dsl_query"], presetId?: string) {
     const preset = this.getPreset(presetId);
     console.log("preset.query_executor", preset.query_executor);
