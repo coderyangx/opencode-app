@@ -1,0 +1,52 @@
+{
+  "memoryRange": [22.56, 267.54],
+  "worstFrameData": {
+    "fps": 0.64,
+    "count": 1
+  },
+  "averageFPS": 12.13,
+  "jankFrameCount": 443,
+  "totalFrameCount": 3119,
+  "custom": {},
+  "parseTime": 0,
+  "fst": 0,
+  "averageFst": 0,
+  "fstArray": [],
+  "fpsArray": [12.13],
+  "maxRenderTimePerFrameArray": [1571],
+  "maxComponentLimit": {
+    "limit": true,
+    "metrics": [
+      {
+        "worstFrameData": {
+          "fps": 0.64,
+          "count": 1
+        },
+        "maxRenderTimePerFrame": 1571,
+        "averageFPS": 12.13,
+        "jankFrameCount": 443,
+        "totalFrameCount": 3119,
+        "memoryRange": [22.56, 267.54],
+        "limit": 497
+      }
+    ]
+  },
+  "setterVisibility": {
+    "hasWrong": true,
+    "metrics": [
+      {
+        "worstFrameData": {
+          "fps": 0.64,
+          "count": 1
+        },
+        "maxRenderTimePerFrame": 1571,
+        "averageFPS": 12.13,
+        "jankFrameCount": 443,
+        "totalFrameCount": 3119,
+        "memoryRange": [22.56, 267.54],
+        "limit": 497
+      }
+    ]
+  },
+  "taskTime": 271060.771416001
+}

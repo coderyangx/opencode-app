@@ -1,0 +1,12 @@
+{
+  "memoryRange": [74.45, 75.8],
+  "maxRenderTimePerFrame": 41.4,
+  "averageFPS": 59.23,
+  "jankFrameCount": 0,
+  "totalFrameCount": 59.1,
+  "custom": {},
+  "fst": [3642, 1811, 1777, 1522, 1321, 1359, 1452, 1269, 1431, 1824],
+  "tp90": 1824,
+  "averageFst": 1740.8,
+  "taskTime": 87006.93195799924
+}

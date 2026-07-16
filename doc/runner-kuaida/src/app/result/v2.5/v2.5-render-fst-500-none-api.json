@@ -1,0 +1,17 @@
+{
+  "memoryRange": [33.44, 33.49],
+  "maxRenderTimePerFrame": 18.13,
+  "averageFPS": 61.07,
+  "jankFrameCount": 0,
+  "totalFrameCount": 61,
+  "custom": {},
+  "parseTime": 0,
+  "fst": 2082.3333333333335,
+  "averageFst": 2293,
+  "fstArray": [4189, 2009, 2321, 2173, 2193, 1967, 2017, 2058, 1982, 2021],
+  "fpsArray": [60.71, 60.82, 61.37, 61.01, 60.96, 60.96, 61.37, 61.07, 61.18, 61.21],
+  "maxRenderTimePerFrameArray": [21, 19, 18, 18, 18, 18, 18, 18, 18, 17],
+  "taskTime": 70047.546916008,
+  "baseLineFst": 2500,
+  "desc": "没有接口请求"
+}

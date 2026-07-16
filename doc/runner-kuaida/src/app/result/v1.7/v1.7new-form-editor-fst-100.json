@@ -1,0 +1,9 @@
+{
+  "memoryRange": [30.82, 30.93],
+  "custom": {},
+  "fst": [1644, 1791, 1594, 1607, 1622, 1672, 1701, 1709, 1659, 1772],
+  "tp90": 1791,
+  "averageFst": 1677.1,
+  "jankFrameData": [false, false, false, false, false, false, false, false, false, false],
+  "taskTime": 130665.87287499942
+}

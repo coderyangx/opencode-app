@@ -1,0 +1,21 @@
+{
+  "memoryRange": [15.93, 27.81],
+  "maxRenderTimePerFrame": 190.5,
+  "worstFrameData": {
+    "fps": 4.42,
+    "count": 2
+  },
+  "averageFPS": 45.63,
+  "jankFrameCount": 1,
+  "totalFrameCount": 82.8,
+  "custom": {},
+  "parseTime": 0,
+  "fst": 2540.4285714285716,
+  "averageFst": 2594.9,
+  "fstArray": [4424, 2496, 1857, 2688, 2635, 2364, 2582, 1885, 2449, 2569],
+  "fpsArray": [32.88, 59.9, 60.17, 30.02, 33.35, 58.8, 33.39, 60.13, 52.7, 34.95],
+  "maxRenderTimePerFrameArray": [328, 43, 44, 353, 321, 52, 322, 41, 93, 321],
+  "taskTime": 70150.56245799363,
+  "baseLineFst": 2500,
+  "desc": "正常页面"
+}

@@ -1,0 +1,697 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .copy-btn { margin: 10px; padding: 5px 10px; }
+        .base { background: rgb(237, 250, 244) }
+      </style>
+    </head>
+    <body>
+      <h1>性能测试报告</h1>
+      <button class="copy-btn" onclick="copyTable('allTable')">复制</button>
+      <table id="allTable">
+        <tr>
+          <th>文件名</th>
+          <th>单帧最大渲染时长</th>
+          <th>基准值</th>
+          <th>平均FPS</th>
+          <th>基准值</th>
+          <th>FST</th>
+          <th>基准值</th>
+          <th>解析时间</th>
+          <th>基准值</th>
+        </tr>
+        
+          <tr>
+            <td>R6-add-100-select.json</td>
+            <td>119.63</td>
+            <td class='base'>-</td>
+            <td>31.92</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-add-200-select.json</td>
+            <td>308</td>
+            <td class='base'>-</td>
+            <td>19.64</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-add-300-select.json</td>
+            <td>489.75</td>
+            <td class='base'>-</td>
+            <td>14.72</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-add-400-select.json</td>
+            <td>552.88</td>
+            <td class='base'>-</td>
+            <td>14.95</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-add-500-select.json</td>
+            <td>564.25</td>
+            <td class='base'>-</td>
+            <td>16.07</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-copy-100-.json</td>
+            <td>144.75</td>
+            <td class='base'>-</td>
+            <td>30.4</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-copy-200-.json</td>
+            <td>310.5</td>
+            <td class='base'>-</td>
+            <td>20.88</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-copy-300-.json</td>
+            <td>502.38</td>
+            <td class='base'>-</td>
+            <td>14.53</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-copy-400-.json</td>
+            <td>572.13</td>
+            <td class='base'>-</td>
+            <td>13.81</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-copy-500-.json</td>
+            <td>553.75</td>
+            <td class='base'>-</td>
+            <td>15.77</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-delete-100-.json</td>
+            <td>129.88</td>
+            <td class='base'>-</td>
+            <td>27.06</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-delete-200-.json</td>
+            <td>304.5</td>
+            <td class='base'>-</td>
+            <td>18.66</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-delete-300-.json</td>
+            <td>506.5</td>
+            <td class='base'>-</td>
+            <td>13.74</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-delete-400-.json</td>
+            <td>582.25</td>
+            <td class='base'>-</td>
+            <td>13.51</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-delete-500-.json</td>
+            <td>547.13</td>
+            <td class='base'>-</td>
+            <td>14.33</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-detail-fst-.json</td>
+            <td>241.25</td>
+            <td class='base'>-</td>
+            <td>55.11</td>
+            <td class='base'>-</td>
+            <td>3032</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-drag-100-select.json</td>
+            <td>131</td>
+            <td class='base'>-</td>
+            <td>56.32</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-drag-200-select.json</td>
+            <td>284</td>
+            <td class='base'>-</td>
+            <td>51.94</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-drag-300-select.json</td>
+            <td>465.83</td>
+            <td class='base'>-</td>
+            <td>47.71</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-drag-400-select.json</td>
+            <td>540.17</td>
+            <td class='base'>-</td>
+            <td>46.17</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-drag-500-select.json</td>
+            <td>517.67</td>
+            <td class='base'>-</td>
+            <td>46.39</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-100-select.json</td>
+            <td>37.5</td>
+            <td class='base'>-</td>
+            <td>59.96</td>
+            <td class='base'>-</td>
+            <td>2755</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-200-select.json</td>
+            <td>41.25</td>
+            <td class='base'>-</td>
+            <td>59.83</td>
+            <td class='base'>-</td>
+            <td>3128</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-300-select.json</td>
+            <td>57.13</td>
+            <td class='base'>-</td>
+            <td>52.75</td>
+            <td class='base'>-</td>
+            <td>3567</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-400-select.json</td>
+            <td>56.14</td>
+            <td class='base'>-</td>
+            <td>48.68</td>
+            <td class='base'>-</td>
+            <td>3893</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-500-select.json</td>
+            <td>50.75</td>
+            <td class='base'>-</td>
+            <td>65.78</td>
+            <td class='base'>-</td>
+            <td>4313</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-memory-500-select.json</td>
+            <td>undefined</td>
+            <td class='base'>-</td>
+            <td>4.66</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-limit-500-.json</td>
+            <td>undefined</td>
+            <td class='base'>-</td>
+            <td>8.11</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-edit-500-select.json</td>
+            <td>124.88</td>
+            <td class='base'>-</td>
+            <td>58.56</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-100-.json</td>
+            <td>105.5</td>
+            <td class='base'>-</td>
+            <td>57.32</td>
+            <td class='base'>-</td>
+            <td>2811</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-200-.json</td>
+            <td>192.25</td>
+            <td class='base'>-</td>
+            <td>49.26</td>
+            <td class='base'>-</td>
+            <td>2994</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-300-.json</td>
+            <td>355.63</td>
+            <td class='base'>-</td>
+            <td>39.21</td>
+            <td class='base'>-</td>
+            <td>3144</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-400-.json</td>
+            <td>263</td>
+            <td class='base'>-</td>
+            <td>37.85</td>
+            <td class='base'>-</td>
+            <td>3307</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-500-.json</td>
+            <td>403.13</td>
+            <td class='base'>-</td>
+            <td>30.74</td>
+            <td class='base'>-</td>
+            <td>3393</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-visibility-500-.json</td>
+            <td>769.5</td>
+            <td class='base'>-</td>
+            <td>5.6</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-select-500-select.json</td>
+            <td>492.75</td>
+            <td class='base'>-</td>
+            <td>10.45</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-edit-100-.json</td>
+            <td>149</td>
+            <td class='base'>-</td>
+            <td>27.78</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-edit-200-.json</td>
+            <td>289</td>
+            <td class='base'>-</td>
+            <td>8.3</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-edit-300-.json</td>
+            <td>458.13</td>
+            <td class='base'>-</td>
+            <td>4.69</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-edit-400-.json</td>
+            <td>506.25</td>
+            <td class='base'>-</td>
+            <td>4.19</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-edit-500-.json</td>
+            <td>499.88</td>
+            <td class='base'>-</td>
+            <td>5.04</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-setter-visibility-500-.json</td>
+            <td>78.88</td>
+            <td class='base'>-</td>
+            <td>50.12</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiHome-fst-.json</td>
+            <td>60</td>
+            <td class='base'>-</td>
+            <td>58.69</td>
+            <td class='base'>-</td>
+            <td>1878</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiNewdetail-fst-.json</td>
+            <td>165.13</td>
+            <td class='base'>-</td>
+            <td>57.7</td>
+            <td class='base'>-</td>
+            <td>2092</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiSubmit-fst-.json</td>
+            <td>66.75</td>
+            <td class='base'>-</td>
+            <td>59.55</td>
+            <td class='base'>-</td>
+            <td>1933</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R6-workbench-fst-.json</td>
+            <td>18.13</td>
+            <td class='base'>-</td>
+            <td>60.31</td>
+            <td class='base'>-</td>
+            <td>1816</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+      </table>
+
+      <h1>fst性能测试报告</h1>
+      <button class="copy-btn" onclick="copyTable('fstTable')">复制</button>
+      <table id="fstTable">
+        <tr>
+          <th>文件名</th>
+          <th>FST</th>
+          <th>基准值</th>
+        </tr>
+        
+          <tr>
+            <td>R6-detail-fst-.json</td>
+            <td>3032</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-100-select.json</td>
+            <td>2755</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-200-select.json</td>
+            <td>3128</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-300-select.json</td>
+            <td>3567</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-400-select.json</td>
+            <td>3893</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-editor-fst-500-select.json</td>
+            <td>4313</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-100-.json</td>
+            <td>2811</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-200-.json</td>
+            <td>2994</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-300-.json</td>
+            <td>3144</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-400-.json</td>
+            <td>3307</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-render-fst-500-.json</td>
+            <td>3393</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiHome-fst-.json</td>
+            <td>1878</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiNewdetail-fst-.json</td>
+            <td>2092</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-shenpiSubmit-fst-.json</td>
+            <td>1933</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R6-workbench-fst-.json</td>
+            <td>1816</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+      </table>
+
+      <script>
+        function copyTable(tableId) {
+          const table = document.getElementById(tableId);
+          const range = document.createRange();
+          range.selectNode(table);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+        }
+      </script>
+    </body>
+    </html>
+  

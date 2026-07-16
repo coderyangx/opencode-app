@@ -1,0 +1,32 @@
+{
+  "memoryRange": [21.61, 21.56],
+  "maxRenderTimePerFrame": 58.9,
+  "averageFPS": 59.91,
+  "jankFrameCount": 0,
+  "totalFrameCount": 62,
+  "custom": {},
+  "fst": [2558, 1124, 898, 873, 877, 1034, 974, 971, 1034, 1027],
+  "tp90": 1124,
+  "parseTime": 16.09,
+  "averageFst": 1137,
+  "taskTime": 84155.02375000715
+}
+// 多次测试
+{
+  "memoryRange": [18.69, 21.55],
+  "maxRenderTimePerFrame": 98.7,
+  "worstFrameData": {
+    "fps": 5.32,
+    "count": 2
+  },
+  "averageFPS": 57.73,
+  "jankFrameCount": 0.4,
+  "totalFrameCount": 71.6,
+  "custom": {},
+  "fst": [3534, 1126, 1051, 957, 1114, 1901, 2571, 1705, 1124, 1004],
+  "tp90": 2571,
+  "parseTime": 15.98,
+  "averageFst": 1608.7,
+  "taskTime": 90695.35245800018
+}
+

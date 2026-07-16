@@ -1,0 +1,17 @@
+{
+  "memoryRange": [48.56, 48.61],
+  "maxRenderTimePerFrame": 22.5,
+  "averageFPS": 60.71,
+  "jankFrameCount": 0,
+  "totalFrameCount": 60.8,
+  "custom": {},
+  "parseTime": 0,
+  "fst": 2273,
+  "averageFst": 2428.4,
+  "fstArray": [3827, 2312, 2163, 2786, 2227, 2242, 2242, 2160, 2200, 2125],
+  "fpsArray": [60.83, 60.66, 60.61, 60.59, 61.02, 60.53, 60.54, 61.08, 60.71, 60.5],
+  "maxRenderTimePerFrameArray": [19, 22, 22, 23, 39, 24, 24, 17, 21, 25],
+  "taskTime": 71935.60783301294,
+  "baseLineFst": 2500,
+  "desc": "增加dom渲染"
+}

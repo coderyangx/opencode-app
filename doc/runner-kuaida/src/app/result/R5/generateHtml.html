@@ -1,0 +1,295 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .copy-btn { margin: 10px; padding: 5px 10px; }
+        .base { background: rgb(237, 250, 244) }
+      </style>
+    </head>
+    <body>
+      <h1>性能测试报告</h1>
+      <button class="copy-btn" onclick="copyTable('allTable')">复制</button>
+      <table id="allTable">
+        <tr>
+          <th>文件名</th>
+          <th>单帧最大渲染时长</th>
+          <th>基准值</th>
+          <th>平均FPS</th>
+          <th>基准值</th>
+          <th>FST</th>
+          <th>基准值</th>
+          <th>解析时间</th>
+          <th>基准值</th>
+        </tr>
+        
+          <tr>
+            <td>R5-editor-fst-100-select.json</td>
+            <td>28.38</td>
+            <td class='base'>-</td>
+            <td>60.1</td>
+            <td class='base'>-</td>
+            <td>1912</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-200-select.json</td>
+            <td>34.75</td>
+            <td class='base'>-</td>
+            <td>60.24</td>
+            <td class='base'>-</td>
+            <td>2111</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-300-select.json</td>
+            <td>43.63</td>
+            <td class='base'>-</td>
+            <td>59.77</td>
+            <td class='base'>-</td>
+            <td>2320</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-400-select.json</td>
+            <td>20</td>
+            <td class='base'>-</td>
+            <td>73.69</td>
+            <td class='base'>-</td>
+            <td>2456</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-500-select.json</td>
+            <td>24.43</td>
+            <td class='base'>-</td>
+            <td>86.35</td>
+            <td class='base'>-</td>
+            <td>2743</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-100-.json</td>
+            <td>56.5</td>
+            <td class='base'>-</td>
+            <td>59.39</td>
+            <td class='base'>-</td>
+            <td>2250</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-200-.json</td>
+            <td>46.38</td>
+            <td class='base'>-</td>
+            <td>58.54</td>
+            <td class='base'>-</td>
+            <td>2325</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-300-.json</td>
+            <td>47.5</td>
+            <td class='base'>-</td>
+            <td>59.18</td>
+            <td class='base'>-</td>
+            <td>2450</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-400-.json</td>
+            <td>85.88</td>
+            <td class='base'>-</td>
+            <td>55.42</td>
+            <td class='base'>-</td>
+            <td>2422</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-500-.json</td>
+            <td>115.13</td>
+            <td class='base'>-</td>
+            <td>52.26</td>
+            <td class='base'>-</td>
+            <td>2538</td>
+            <td class='base'>3000</td>
+            <td>-</td>
+            <td class='base'>-</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-parseTime-100-.json</td>
+            <td>54</td>
+            <td class='base'>-</td>
+            <td>58.05</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>10.76</td>
+            <td class='base'>15</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-parseTime-200-.json</td>
+            <td>36.25</td>
+            <td class='base'>-</td>
+            <td>59.6</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>14.59</td>
+            <td class='base'>23</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-parseTime-300-.json</td>
+            <td>94.25</td>
+            <td class='base'>-</td>
+            <td>56.78</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>19.77</td>
+            <td class='base'>30</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-parseTime-400-.json</td>
+            <td>53.25</td>
+            <td class='base'>-</td>
+            <td>56.37</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>22.53</td>
+            <td class='base'>39</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-parseTime-500-.json</td>
+            <td>88.13</td>
+            <td class='base'>-</td>
+            <td>55.46</td>
+            <td class='base'>-</td>
+            <td>0</td>
+            <td class='base'>-</td>
+            <td>26.07</td>
+            <td class='base'>48</td>
+          </tr>
+        
+      </table>
+
+      <h1>fst性能测试报告</h1>
+      <button class="copy-btn" onclick="copyTable('fstTable')">复制</button>
+      <table id="fstTable">
+        <tr>
+          <th>文件名</th>
+          <th>FST</th>
+          <th>基准值</th>
+        </tr>
+        
+          <tr>
+            <td>R5-editor-fst-100-select.json</td>
+            <td>1912</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-200-select.json</td>
+            <td>2111</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-300-select.json</td>
+            <td>2320</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-400-select.json</td>
+            <td>2456</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-editor-fst-500-select.json</td>
+            <td>2743</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-100-.json</td>
+            <td>2250</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-200-.json</td>
+            <td>2325</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-300-.json</td>
+            <td>2450</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-400-.json</td>
+            <td>2422</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+          <tr>
+            <td>R5-render-fst-500-.json</td>
+            <td>2538</td>
+            <td class='base'>3000</td>
+          </tr>
+        
+      </table>
+
+      <script>
+        function copyTable(tableId) {
+          const table = document.getElementById(tableId);
+          const range = document.createRange();
+          range.selectNode(table);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+        }
+      </script>
+    </body>
+    </html>
+  

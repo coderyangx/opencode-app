@@ -1,0 +1,109 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .copy-btn { margin: 10px; padding: 5px 10px; }
+        .base { background: rgb(237, 250, 244) }
+      </style>
+    </head>
+    <body>
+      <h1>性能测试报告</h1>
+      <button class="copy-btn" onclick="copyTable()">复制表格数据</button>
+      <table id="resultTable">
+        <tr>
+          <th>文件名</th>
+          <th>单帧最大渲染时长</th>
+          <th>基准值</th>
+          <th>平均FPS</th>
+          <th>基准值</th>
+          <th>FST</th>
+          <th>基准值</th>
+          <th>FPS数组</th>
+        </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-.json</td>
+            <td>18.5</td>
+            <td class='base'>-</td>
+            <td>60.67</td>
+            <td class='base'>-</td>
+            <td>2136.00</td>
+            <td class='base'>-</td>
+            <td>60.50  61.01  61.07  60.82  60.39  60.37  61.35  60.43  60.07  60.68</td>
+          </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-1.json</td>
+            <td>50.5</td>
+            <td class='base'>-</td>
+            <td>56.94</td>
+            <td class='base'>-</td>
+            <td>2032.11</td>
+            <td class='base'>-</td>
+            <td>57.38  57.28  58.33  55.99  56.39  56.95  57.24  56.97  54.62  58.30</td>
+          </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-dom-change.json</td>
+            <td>22.5</td>
+            <td class='base'>-</td>
+            <td>60.71</td>
+            <td class='base'>-</td>
+            <td>2273.00</td>
+            <td class='base'>-</td>
+            <td>60.83  60.66  60.61  60.59  61.02  60.53  60.54  61.08  60.71  60.50</td>
+          </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-none-api.json</td>
+            <td>18.13</td>
+            <td class='base'>-</td>
+            <td>61.07</td>
+            <td class='base'>-</td>
+            <td>2082.33</td>
+            <td class='base'>-</td>
+            <td>60.71  60.82  61.37  61.01  60.96  60.96  61.37  61.07  61.18  61.21</td>
+          </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-normal.json</td>
+            <td>190.5</td>
+            <td class='base'>-</td>
+            <td>45.63</td>
+            <td class='base'>-</td>
+            <td>2540.43</td>
+            <td class='base'>-</td>
+            <td>32.88  59.90  60.17  30.02  33.35  58.80  33.39  60.13  52.70  34.95</td>
+          </tr>
+        
+          <tr>
+            <td>v2.5-render-fst-500-resource-change.json</td>
+            <td>17.88</td>
+            <td class='base'>-</td>
+            <td>60.44</td>
+            <td class='base'>-</td>
+            <td>2282.00</td>
+            <td class='base'>-</td>
+            <td>60.42  60.25  60.52  60.28  60.31  60.56  60.76  60.37  60.48  60.44</td>
+          </tr>
+        
+      </table>
+
+      <script>
+        function copyTable() {
+          const table = document.getElementById('resultTable');
+          const range = document.createRange();
+          range.selectNode(table);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+          document.execCommand('copy');
+          window.getSelection().removeAllRanges();
+        }
+      </script>
+    </body>
+    </html>
+  

@@ -1,0 +1,19 @@
+{
+  "memoryRange": [11.75, 15.43],
+  "maxRenderTimePerFrame": 89.5,
+  "worstFrameData": {
+    "fps": 8.17,
+    "count": 1
+  },
+  "averageFPS": 58.01,
+  "jankFrameCount": 0.8,
+  "totalFrameCount": 113.8,
+  "custom": {},
+  "parseTime": 10.89,
+  "fst": 0,
+  "averageFst": 0,
+  "fstArray": [],
+  "fpsArray": [53.57, 60.31, 57.74, 57.54, 60.09, 58.08, 57.16, 60.58, 57.71, 57.31],
+  "maxRenderTimePerFrameArray": [235, 25, 118, 122, 18, 96, 107, 19, 121, 108],
+  "taskTime": 56204.598040999845
+}

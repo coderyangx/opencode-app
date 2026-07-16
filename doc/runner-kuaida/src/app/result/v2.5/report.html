@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 20px 0;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .copy-btn {
+      margin: 10px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <button className='copy-btn' onClick='copy'>
+    复制表格
+  </button>
+  <table id='resultTable'>
+    <thead>
+      <tr>
+        <th>文件名</th>
+        <th>FST</th>
+        <th>FPS数组</th>
+      </tr>
+    </thead>
+    <tbody>
+      {data.map((item) => (
+      <tr key={item.filename}>
+        <td>{item.filename}</td>
+        <td>{item.fst.toFixed(2)}</td>
+        <td>{item.fpsArray.map((fps) => fps.toFixed(2)).join(', ')}</td>
+      </tr>
+      ))}
+    </tbody>
+  </table>
+  <script>
+    const copy = () => {
+      const table = document.getElementById('resultTable');
+      const range = document.createRange();
+      range.selectNode(table);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+      document.execCommand('copy');
+      window.getSelection().removeAllRanges();
+    }
+  </script>
+</body>
+
+</html>

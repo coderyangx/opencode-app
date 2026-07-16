@@ -1,0 +1,185 @@
+{
+  "memoryRange": [82.19, 84.46],
+  "maxRenderTimePerFrame": 78.88,
+  "averageFPS": 50.12,
+  "jankFrameCount": 0,
+  "totalFrameCount": 36,
+  "custom": {},
+  "parseTime": 0,
+  "fst": 0,
+  "averageFst": 0,
+  "fstArray": [],
+  "fpsArray": [48.47, 48.85, 51.15, 50.27, 49.83, 49.8, 52.44, 49.39, 51.6, 49.36],
+  "maxRenderTimePerFrameArray": [93, 75, 74, 81, 73, 75, 75, 85, 91, 75],
+  "maxComponentLimit": {
+    "limit": false,
+    "metrics": [
+      {
+        "maxRenderTimePerFrame": 93,
+        "averageFPS": 48.47,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.39, 84.62],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 48.85,
+        "jankFrameCount": 0,
+        "totalFrameCount": 34,
+        "memoryRange": [82.17, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 74,
+        "averageFPS": 51.15,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.16, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 81,
+        "averageFPS": 50.27,
+        "jankFrameCount": 0,
+        "totalFrameCount": 35,
+        "memoryRange": [82.17, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 73,
+        "averageFPS": 49.83,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.15, 84.42],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 49.8,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.18, 84.45],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 52.44,
+        "jankFrameCount": 0,
+        "totalFrameCount": 38,
+        "memoryRange": [82.18, 84.45],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 85,
+        "averageFPS": 49.39,
+        "jankFrameCount": 0,
+        "totalFrameCount": 34,
+        "memoryRange": [82.17, 84.43],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 91,
+        "averageFPS": 51.6,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.17, 84.43],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 49.36,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.17, 84.45],
+        "isWork": true
+      }
+    ]
+  },
+  "setterVisibility": {
+    "hasWrong": false,
+    "metrics": [
+      {
+        "maxRenderTimePerFrame": 93,
+        "averageFPS": 48.47,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.39, 84.62],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 48.85,
+        "jankFrameCount": 0,
+        "totalFrameCount": 34,
+        "memoryRange": [82.17, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 74,
+        "averageFPS": 51.15,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.16, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 81,
+        "averageFPS": 50.27,
+        "jankFrameCount": 0,
+        "totalFrameCount": 35,
+        "memoryRange": [82.17, 84.44],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 73,
+        "averageFPS": 49.83,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.15, 84.42],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 49.8,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.18, 84.45],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 52.44,
+        "jankFrameCount": 0,
+        "totalFrameCount": 38,
+        "memoryRange": [82.18, 84.45],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 85,
+        "averageFPS": 49.39,
+        "jankFrameCount": 0,
+        "totalFrameCount": 34,
+        "memoryRange": [82.17, 84.43],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 91,
+        "averageFPS": 51.6,
+        "jankFrameCount": 0,
+        "totalFrameCount": 37,
+        "memoryRange": [82.17, 84.43],
+        "isWork": true
+      },
+      {
+        "maxRenderTimePerFrame": 75,
+        "averageFPS": 49.36,
+        "jankFrameCount": 0,
+        "totalFrameCount": 36,
+        "memoryRange": [82.17, 84.45],
+        "isWork": true
+      }
+    ]
+  },
+  "taskTime": 85556.20032299869
+}

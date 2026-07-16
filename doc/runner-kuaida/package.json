@@ -1,0 +1,30 @@
+{
+  "name": "snapshot-runner-kuaida",
+  "private": "true",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@dp/squirrel-client": "^2.2.4",
+    "@onejs/perf-wolf": "^0.0.1",
+    "koa": "^2.14.2",
+    "koa-router": "^12.0.0",
+    "lodash.merge": "^4.6.2",
+    "node-fetch": "^3.3.1",
+    "puppeteer": "19.8.5",
+    "web-vitals": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.13.6",
+    "@types/koa-router": "^7.4.4",
+    "@types/lodash.merge": "^4.6.8",
+    "typescript": "^5.0.2",
+    "vite": "^4.1.0",
+    "vite-plugin-node": "^3.0.2"
+  },
+  "license": "MIT"
+}
