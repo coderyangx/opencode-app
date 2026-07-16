@@ -409,6 +409,15 @@ export const detectMaskShow = () => {
 [拆包说明](https://github.com/cisen/blog/issues/143)
 [webpack配置说明](https://blog.csdn.net/weixin_38255079/article/details/122967968?spm=1001.2101.3001.6650.1&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-1-122967968-blog-118856235.235%5Ev38%5Epc_relevant_sort_base1&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-1-122967968-blog-118856235.235%5Ev38%5Epc_relevant_sort_base1&utm_relevant_index=2)
 Code Splitting 优化指南 3. 网络优化指南
+**概述**
+随着应用程序日趋复杂，或仅是对其进行简单的维护，CSS 和 JavaScripts 文件以及 bundles 的大小都会随之增加，尤其是所包含的第三方库的数量和大小的增长。为了避免下载巨大的文件，可以将脚本拆分为多个较小的文件。当前页面所需的代码能够立即加载，而另外的脚本可以在与页面或应用交互后懒加载（lazy loaded），页面性能因此提升。虽然代码的总量仍然相同（甚至可能大了一些字节），但是初次加载所需的代码数量减少了。**主要目的是**：提高缓存命中率、基于http2并行加载更多资源
+
+**原则**
+根据项目情况将资源库进行合理拆分，降低首次页面加载资源的尺寸大小。
+基于路由层面进行代码拆分达到懒加载的效果。
+根据更新频率、是否在多个页面中复用等特性，将一些通用库或者组件（echarts、codemirror等）提取成单独 chunk，以提高分包缓存命中率，同时对于某些未引用此功能的页面也减少了无关资源的加载，达到减少整体资源加载时间的目的。
+对于第三方包，优先采用按需加载，非必要不要注册全局组件以减少主包体积。
+
 `/* 	
 	主要是将node_modules中的第三方库和被多次引用的模块进行拆分，以实现代码的复用和缓存 
   1、chunks字段的值为all，表示同时对同步和异步代码进行拆分。如果你的项目中没有使用到异步加载的代码，可以将chunks的值改为initial，只对同步代码进行拆分
