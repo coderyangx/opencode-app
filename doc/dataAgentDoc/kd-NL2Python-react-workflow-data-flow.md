@@ -1,5 +1,41 @@
 # kuaida「查询项目等级为 A 的数量」完整数据流转（**NL2Python**）
 
+// 会话
+threadId; // 会话唯一标识
+messageId; // 当前消息标识
+traceId; // 链路追踪 ID
+assert_key; // 视图id，view-xxx
+
+threadId 是数据分析会话的唯一标识，它将沙箱实例、S3 存储路径、文件系统命名空间、Artifact 管理器全部绑定到同一个会话上，实现了「同一对话内状态复用 + 不同对话间数据隔离」
+
+```ts
+用户发起新对话
+  │
+  │  HTTP 入口生成 threadId（如 "conv-abc123"）
+  ▼
+runtimeContext.threadId = "conv-abc123"
+  │
+  ├──→ createSandbox()
+  │      ├── sessionSandboxCacheKey = "conv-abc123"
+  │      ├── S3 挂载: agent-artifacts/conv-abc123 → /home/user/bucket
+  │      └── 沙箱内目录: /tmp/conv-abc123/
+  │
+  ├──→ ArtifactManager.fromSession("conv-abc123")
+  │      └── 产物存储作用域 = conv-abc123
+  │
+  ├──→ prepareDataStep
+  │      └── 数据落盘: /tmp/conv-abc123/{asset_key}.xlsx
+  │
+  ├──→ ReAct 循环（多轮）
+  │      ├── 第1轮: read_dataset("view-xxx") → 读 /tmp/conv-abc123/view-xxx.xlsx
+  │      ├── 第2轮: read_dataset("view-xxx") → 同一文件（沙箱复用）
+  │      └── log_dataset_artifact → 保存到 /tmp/conv-abc123/{新asset_key}.xlsx
+  │
+  └──→ 文件服务
+         └── /analysis-agent/file/conv-abc123/generated_files/chart.png
+              → 从 S3 的 agent-artifacts/conv-abc123/ 读取并返回
+```
+
 ## 0 数据获取和流转
 
 ```
@@ -116,7 +152,7 @@ DatasetArtifact（AoA + metadata）
    log_dataset_artifact(df, asset_key, description)：保存中间数据集到 xlsx + S3，并打印 [ARTIFACT_INFO] 清单供程序解析
    log_plot_artifact(plt, title, description, asset_key)：保存图表到 S3，打印图片链接
 6. 完整数据流图
-   ```
+   ```ts
    kuaida 视图
     │
     │ ① getSchema: GET /showInfo/{view}
