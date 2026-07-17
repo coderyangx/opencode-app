@@ -11,53 +11,53 @@
   │
   ▼
 ┌─────────────────────────────────┐
-│  AnalysisReActAgent (V3)        │  ← LLM 理解意图，决定调用 query-data 工具
-│  或 Planning → Analysis (V2)    │
+│  AnalysisReActAgent (V3)           │  ← LLM 理解意图，决定调用 query-data 工具
+│  或 Planning → Analysis (V2)       │
 └──────────────┬──────────────────┘
-               │ 构造工具参数
-               ▼
+                │ 构造工具参数
+                ▼
 ┌─────────────────────────────────┐
-│  query-data 工具                 │
-│  (nlDataQueryToolFactory)        │
-│                                 │
+│  query-data 工具                   │
+│  (nlDataQueryToolFactory)          │
+│                                    │
 │  ┌───────────────────────────┐  │
-│  │ nlDataQuery()             │  │  ← 阶段1: LLM 生成 SQL
-│  │  getDataSchema()          │  │
-│  │  generateObject(GPT-4.1)  │  │
-│  │  → { table, sql, columns }│  │
-│  └───────────┬───────────────┘  │
-│              │                   │
-│  ┌───────────▼───────────────┐  │
-│  │ execute()                 │  │  ← 阶段2: 执行查询
-│  │  dataSvc.executeQuery(    │  │
-│  │    { sql, from: table })  │  │
-│  │  )                        │  │
+│  │ nlDataQuery()                │  │  ← 阶段1: LLM 生成 SQL
+│  │  getDataSchema()             │  │
+│  │  generateObject(GPT-4.1)     │  │
+│  │  → { table, sql, columns }   │  │
+│  └───────────┬───────────────┘   │
+│               │                    │
+│  ┌───────────▼───────────────┐   │
+│  │ execute()                    │  │  ← 阶段2: 执行查询
+│  │  dataSvc.executeQuery(       │  │
+│  │    { sql, from: table })     │  │
+│  │  )                           │  │
 │  └───────────┬───────────────┘  │
 └──────────────┼──────────────────┘
-               │
-               ▼
+                │
+                ▼
 ┌─────────────────────────────────┐
-│  NL2SQLDataService              │  ← 阶段3: 路由到执行器
-│  → presetManager.getPreset()    │
-│  → executorRegistry.getExecutor│
+│  NL2SQLDataService                 │  ← 阶段3: 路由到执行器
+│  → presetManager.getPreset()       │
+│  → executorRegistry.getExecutor    │
 └──────────────┬──────────────────┘
-               │
-               ▼
+                │
+                ▼
 ┌─────────────────────────────────┐
-│  快搭执行器 (kuaida executor)    │  ← 阶段4: 拉数据 + 格式化 + 查询
-│                                 │
-│  ① 分页拉取 API 全量数据 (缓存1h)│
-│  ② formatDataRow() 对象拍平      │
-│  ③ LocalQueryEngine.query()     │
-│     └─ alasql 内存执行           │
+│  快搭执行器 (kuaida executor)       │  ← 阶段4: 拉数据 + 格式化 + 查询
+│                                    │
+│  ① 分页拉取 API 全量数据 (缓存1h)   │
+│  ② formatDataRow() 对象拍平        │
+│  ③ LocalQueryEngine.query()       │
+│     └─ alasql 内存执行              │
 └──────────────┬──────────────────┘
-               │
-               ▼
+                │
+                ▼
          返回 [{ count: N }]
-               │
-               ▼
+                │
+                ▼
 ┌─────────────────────────────────┐
-│  Agent 总结 → 流式输出给用户      │  ← 阶段5: 结果呈现
+│  Agent 总结 → 流式输出给用户         │  ← 阶段5: 结果呈现
 └─────────────────────────────────┘
 ```
 
@@ -145,10 +145,10 @@ const { object } = await generateObject({
     table: z.string(), // 表 ID
     sql: z.string(), // SQL 语句
     result_columns: z.array(z.string()), // 结果列名
-    error: z.string().nullable(),
+    error: z.string().nullable()
   }),
   temperature: 0.2,
-  prompt, // 任务描述 + query_logic + 字段列表 + 约束
+  prompt // 任务描述 + query_logic + 字段列表 + 约束
 });
 ```
 
@@ -181,7 +181,7 @@ const { object } = await generateObject({
 ```typescript
 const result = await ctx.dataSvc?.executeQuery({
   sql, // "SELECT COUNT(*) AS `count` FROM `kuaida_projects` WHERE `select_dd4c38eb` = 'A'"
-  from: table, // "kuaida_projects"
+  from: table // "kuaida_projects"
 } as any); // ⚠️ as any 绕过类型检查
 ```
 
@@ -254,7 +254,7 @@ const data = results.map((item) => ({
   id: item.id,
   ...item.fields, // 展开字段
   SYSTEM_CREATOR: item.submitter, // 系统字段
-  SYSTEM_DATE_CREATED: item.submitTime,
+  SYSTEM_DATE_CREATED: item.submitTime
 }));
 
 const queryEngine = new LocalQueryEngine(data.map(formatDataRow), table.columns);

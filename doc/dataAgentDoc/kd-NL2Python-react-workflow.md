@@ -341,3 +341,7 @@ finish
 | `observations[]`        | runtimeContextStorage | ReAct 的"记忆"，每轮拼入 prompt                       |
 | `reActStepType`         | runtimeContextStorage | dowhile 循环终止判断依据                              |
 | `UIMessageChunk` 流     | controller/writer     | 流式推送给前端 + 持久化                               |
+
+```
+
+```
